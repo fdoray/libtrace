@@ -1,6 +1,6 @@
 # libtrace
 
-[![Build Status](https://travis-ci.org/TracingTools/libtrace.png?branch=master)](https://travis-ci.org/TracingTools/libtrace)
+[![Build Status](https://travis-ci.org/fdoray/libtrace.png?branch=master)](https://travis-ci.org/fdoray/libtrace)
 
 The libtrace librarie aims to help development of tools to analyze traces.
 
