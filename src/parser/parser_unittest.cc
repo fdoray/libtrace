@@ -38,7 +38,7 @@ using testing::Return;
 
 class MockParser : public parser::ParserImpl {
  public:
-  MOCK_METHOD1(AddTraceFile, bool(const std::string&));
+  MOCK_METHOD1(AddTraceFile, bool(const std::wstring&));
   MOCK_METHOD1(Parse, void(const base::Observer<event::Event>& observer));
 };
 
@@ -51,7 +51,7 @@ class MockObserver : public base::Observer<event::Event> {
 
 TEST(ParserTest, AddTraceFileWithoutParser) {
   parser::Parser parser;
-  EXPECT_FALSE(parser.AddTraceFile("do_not_exist"));
+  EXPECT_FALSE(parser.AddTraceFile(L"do_not_exist"));
 }
 
 TEST(ParserTest, Parse) {
@@ -59,7 +59,7 @@ TEST(ParserTest, Parse) {
   MockObserver observer;
 
   std::unique_ptr<MockParser> impl(new MockParser());
-  std::string filename("dummy");
+  std::wstring filename(L"dummy");
 
   EXPECT_CALL(*impl.get(), AddTraceFile(Ref(filename)))
      .WillOnce(Return(true));

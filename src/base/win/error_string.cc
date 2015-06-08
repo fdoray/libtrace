@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The LibTrace Authors.
+// Copyright (c) 2015 The LibTrace Authors.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -23,53 +23,48 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "parser/etw/etw_parser.h"
+#include "base/win/error_string.h"
 
-#include "base/observer.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <sstream>
+#include <strsafe.h>
 
-namespace parser {
-namespace etw {
+#include "base/string_utils.h"
 
-namespace {
+namespace base {
 
-using testing::_;
+std::string GetWindowsErrorString(DWORD error)
+{
+  LPWSTR error_desc_buffer = NULL;
+  LPWSTR error_str_buffer = NULL;
 
-class MockObserver : public base::Observer<event::Event> {
- public:
-  MOCK_CONST_METHOD1(Receive, void(const event::Event& event));
-};
+  ::FormatMessage(
+      FORMAT_MESSAGE_ALLOCATE_BUFFER |
+      FORMAT_MESSAGE_FROM_SYSTEM |
+      FORMAT_MESSAGE_IGNORE_INSERTS,
+      NULL,
+      error,
+      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+      (LPTSTR)&error_desc_buffer,
+      0, NULL);
 
-}  // namespace
+  error_str_buffer = (LPWSTR)LocalAlloc(LMEM_ZEROINIT,
+    (lstrlen((LPCTSTR)error_desc_buffer) + 40) * sizeof(TCHAR));
+  ::StringCchPrintf((LPTSTR)error_str_buffer,
+    LocalSize(error_str_buffer) / sizeof(TCHAR),
+    TEXT("%d - %s"),
+    error, error_desc_buffer);
 
+  std::wstring error_str(error_str_buffer);
 
-TEST(EtwParserTest, AddTraceFile) {
-  std::unique_ptr<parser::ParserImpl> impl(new parser::etw::ETWParser());
-  MockObserver observer;
+  ::LocalFree(error_desc_buffer);
+  ::LocalFree(error_str_buffer);
 
-  EXPECT_CALL(observer, Receive(_)).Times(0);
-
-  parser::Parser parser;
-  parser.RegisterParser(std::move(impl));
-  parser.Parse(observer);
-
-  EXPECT_FALSE(parser.AddTraceFile(L"dummy.log"));
-  EXPECT_TRUE(parser.AddTraceFile(L"dummy.etl"));
+  return WStringToString(error_str);
 }
 
-TEST(EtwParserTest, ParseWithoutTrace) {
-  std::unique_ptr<parser::ParserImpl> impl(new parser::etw::ETWParser());
-  MockObserver observer;
-
-  EXPECT_CALL(observer, Receive(_) ).Times(0);
-
-  parser::Parser parser;
-  parser.RegisterParser(std::move(impl));
-  parser.Parse(base::MakeObserver(&observer, &MockObserver::Receive));
+std::string GetLastWindowsErrorString()
+{
+  return GetWindowsErrorString(::GetLastError());
 }
 
-// TODO(etienneb): Find a way to implement a complete test for a "etl" file.
-
-}  // namespace etw
-}  // namespace parser
+}  // namespace base

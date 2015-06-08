@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The LibTrace Authors.
+// Copyright (c) 2015 The LibTrace Authors.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -23,53 +23,20 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "parser/etw/etw_parser.h"
+#ifndef BASE_WIN_ERROR_STRING_H_
+#define BASE_WIN_ERROR_STRING_H_
 
-#include "base/observer.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+// Restrict the import to the windows basic includes.
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>  // NOLINT
 
-namespace parser {
-namespace etw {
+#include <string>
 
-namespace {
+namespace base {
 
-using testing::_;
+std::string GetWindowsErrorString(DWORD error);
+std::string GetLastWindowsErrorString();
 
-class MockObserver : public base::Observer<event::Event> {
- public:
-  MOCK_CONST_METHOD1(Receive, void(const event::Event& event));
-};
+}  // namespace base
 
-}  // namespace
-
-
-TEST(EtwParserTest, AddTraceFile) {
-  std::unique_ptr<parser::ParserImpl> impl(new parser::etw::ETWParser());
-  MockObserver observer;
-
-  EXPECT_CALL(observer, Receive(_)).Times(0);
-
-  parser::Parser parser;
-  parser.RegisterParser(std::move(impl));
-  parser.Parse(observer);
-
-  EXPECT_FALSE(parser.AddTraceFile(L"dummy.log"));
-  EXPECT_TRUE(parser.AddTraceFile(L"dummy.etl"));
-}
-
-TEST(EtwParserTest, ParseWithoutTrace) {
-  std::unique_ptr<parser::ParserImpl> impl(new parser::etw::ETWParser());
-  MockObserver observer;
-
-  EXPECT_CALL(observer, Receive(_) ).Times(0);
-
-  parser::Parser parser;
-  parser.RegisterParser(std::move(impl));
-  parser.Parse(base::MakeObserver(&observer, &MockObserver::Receive));
-}
-
-// TODO(etienneb): Find a way to implement a complete test for a "etl" file.
-
-}  // namespace etw
-}  // namespace parser
+#endif  // BASE_WIN_ERROR_STRING_H_

@@ -38,7 +38,7 @@ void Parser::RegisterParser(std::unique_ptr<ParserImpl> parser) {
   parsers_.push_back(parser.release());
 }
 
-bool Parser::AddTraceFile(const std::string& path) {
+bool Parser::AddTraceFile(const std::wstring& path) {
   ParserList::iterator parser = parsers_.begin();
   for (; parser != parsers_.end(); ++parser) {
     if ((*parser)->AddTraceFile(path))

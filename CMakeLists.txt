@@ -43,6 +43,8 @@ endif()
 # Add files of the "base" library that are specific to Windows.
 if(WIN32)
   set(BASE_WIN_SOURCES
+          src/base/win/error_string.cc
+          src/base/win/error_string.h
           src/base/win/scoped_handle.cc
           src/base/win/scoped_handle.h
           )
@@ -131,6 +133,22 @@ target_link_libraries(parser
     base
     event
     )
+
+####################
+# Apps
+####################
+
+if(WIN32)
+add_executable(tracedump
+    src/tracedump/tracedump.cc
+    )
+
+target_link_libraries(tracedump
+    base
+    event
+    parser
+    )
+endif()
 
 ####################
 # Unittests

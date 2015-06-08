@@ -76,7 +76,7 @@ class Parser {
   // Adds a trace file to the list of traces to parse.
   // @param path absolute path to the trace file.
   // @returns true if the trace can be handled by this parser, false otherwise.
-  bool AddTraceFile(const std::string& path);
+  bool AddTraceFile(const std::wstring& path);
 
   // Parses the trace files added with AddTraceFile() and sends the resulting
   // events to the provided observer.
@@ -97,7 +97,7 @@ class ParserImpl {
   // Adds a trace file to the list of traces to parse.
   // @param path absolute path to the trace file.
   // @returns true if the trace can be handled by this parser, false otherwise.
-  virtual bool AddTraceFile(const std::string& path) = 0;
+  virtual bool AddTraceFile(const std::wstring& path) = 0;
 
   // Parses the trace files added with AddTraceFile() and sends the resulting
   // events to the provided observer.

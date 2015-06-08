@@ -47,7 +47,7 @@ class ETWParser : public parser::ParserImpl {
 
   // Adds a trace file to the list of traces to parse.
   // @param path absolute path to the trace file.
-  bool AddTraceFile(const std::string& path) override;
+  bool AddTraceFile(const std::wstring& path) override;
 
   // Parses the trace files added with AddTraceFile() and sends the resulting
   // events to the provided observer.

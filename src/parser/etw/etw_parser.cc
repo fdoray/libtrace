@@ -32,6 +32,7 @@
 
 #include "base/logging.h"
 #include "base/string_utils.h"
+#include "base/win/error_string.h"
 #include "event/event.h"
 #include "event/value.h"
 #include "parser/etw/etw_raw_kernel_payload_decoder.h"
@@ -133,10 +134,10 @@ void WINAPI ProcessEvent(PEVENT_RECORD pevent) {
 
 }  // namespace
 
-bool ETWParser::AddTraceFile(const std::string& path) {
-  if (!base::StringEndsWith(path, ".etl"))
+bool ETWParser::AddTraceFile(const std::wstring& path) {
+  if (!base::WStringEndsWith(path, L".etl"))
     return false;
-  traces_.push_back(base::StringToWString(path));
+  traces_.push_back(path);
   return true;
 }
 
@@ -157,8 +158,7 @@ void ETWParser::Parse(const base::Observer<Event>& observer) {
 
     TRACEHANDLE th = ::OpenTrace(&trace);
     if (th == INVALID_PROCESSTRACE_HANDLE) {
-      LOG(WARNING) << "OpenTrace failed with error " << ::GetLastError()
-                   << ".";
+      LOG(WARNING) << "OpenTrace failed with error " << base::GetLastWindowsErrorString();
       error = true;
       break;
     }
