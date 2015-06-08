@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The LibTrace Authors.
+// Copyright (c) 2015 The LibTrace Authors.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -23,61 +23,18 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef BASE_OBSERVER_H_
-#define BASE_OBSERVER_H_
-
-#include "base/logging.h"
+#ifndef BASE_BIND_OBJECT_H_
+#define BASE_BIND_OBJECT_H_
 
 namespace base {
 
-template<class T>
-class Observer {
- public:
-  virtual void Receive(const T& data) const = 0;
-};
-
-template<class B, class T>
-class CallbackObserver : public Observer<T> {
- public:
-  typedef void (B::*Callback)(const T&);
-
-  CallbackObserver(B* base, Callback thunk)
-      : base_(base), thunk_(thunk) {
-  }
-
-  virtual void Receive(const T& data) const override {
-    DCHECK(base_ != NULL);
-    (base_->*thunk_)(data);
-  }
-
- private:
-  B* base_;
-  Callback thunk_;
-};
-
-template<class B, class T>
-inline CallbackObserver<B, T>
-    MakeObserver(B* base, void (B::*func)(const T&)) {
-  return CallbackObserver<B, T>(base, func);
-}
-
-template<class B, class T>
-inline CallbackObserver<B, T>
-    MakeObserver(B* base, void (B::*func)(const T&) const) {
-  typedef typename CallbackObserver<B, T>::Callback Callback;
-  return CallbackObserver<B, T>(base, reinterpret_cast<Callback>(func));
-}
-
-template<class B>
-inline CallbackObserver<B, typename B::value_type> BackInserter(B* base) {
-  return MakeObserver<B, typename B::value_type>(base, &B::push_back);
-}
-
-template<class B>
-inline CallbackObserver<B, typename B::value_type> FrontInserter(B* base) {
-  return MakeObserver<B, typename B::value_type>(base, &B::push_front);
+// Inspired from
+// http://stackoverflow.com/questions/14803112/short-way-to-stdbind-member-function-to-object-instance-without-binding-param
+template<typename B, typename R, typename... Args>
+std::function<R(Args...)> BindObject(R (B::* method)(Args...), B* object) {
+  return [=](Args... args){ return (object->*method)(args...); };
 }
 
 }  // namespace base
 
-#endif  // BASE_OBSERVER_H_
+#endif  // BASE_BIND_OBJECT_H_

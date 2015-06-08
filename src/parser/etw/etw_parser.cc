@@ -51,9 +51,9 @@ using event::UCharValue;
 using event::ULongValue;
 using event::Value;
 
-// The only active observer.
+// The only active event callback.
 // TODO(fdoray): If threaded, this could be a Thread-Local Storage.
-const base::Observer<Event>* event_observer = NULL;
+const ETWParser::EventCallback* event_callback;
 
 //  Convert a GUID to a string representation.
 std::string GuidToString(const GUID& guid) {
@@ -128,8 +128,8 @@ void WINAPI ProcessEvent(PEVENT_RECORD pevent) {
   Event event(Timestamp(pevent->EventHeader.TimeStamp.QuadPart),
               std::move(fields));
 
-  // Send the event to the observer.
-  event_observer->Receive(event);
+  // Send the event to the callback.
+  (*event_callback)(event);
 }
 
 }  // namespace
@@ -141,10 +141,10 @@ bool ETWParser::AddTraceFile(const std::wstring& path) {
   return true;
 }
 
-void ETWParser::Parse(const base::Observer<Event>& observer) {
-  // Set the active observer.
-  DCHECK(event_observer == NULL);
-  event_observer = &observer;
+void ETWParser::Parse(const EventCallback& callback) {
+  // Set the active callback.
+  DCHECK(event_callback == nullptr);
+  event_callback = &callback;
 
   // Open all trace files, and keep handles in a vector.
   bool error = false;
@@ -180,8 +180,8 @@ void ETWParser::Parse(const base::Observer<Event>& observer) {
     ::CloseTrace(handles[i]);
   }
 
-  // Remove the active observer.
-  event_observer = NULL;
+  // Remove the active callback.
+  event_callback = NULL;
 }
 
 }  // namespace etw

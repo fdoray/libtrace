@@ -26,11 +26,11 @@
 #ifndef PARSER_ETW_ETW_PARSER_H_
 #define PARSER_ETW_ETW_PARSER_H_
 
+#include <functional>
 #include <string>
 #include <vector>
 
 #include "base/base.h"
-#include "base/observer.h"
 #include "event/event.h"
 #include "parser/parser.h"
 
@@ -40,6 +40,7 @@ namespace etw {
 // Generate Event objects from ETW trace files.
 class ETWParser : public parser::ParserImpl {
  public:
+  typedef parser::ParserImpl::EventCallback EventCallback;
 
   // Constuctor.
   ETWParser() : parser::ParserImpl() {
@@ -50,9 +51,9 @@ class ETWParser : public parser::ParserImpl {
   bool AddTraceFile(const std::wstring& path) override;
 
   // Parses the trace files added with AddTraceFile() and sends the resulting
-  // events to the provided observer.
-  // @param observer an observer that will receive the decoded events.
-  void Parse(const base::Observer<event::Event>& observer) override;
+  // events to the provided callback.
+  // @param callback a callback that will receive the decoded events.
+  void Parse(const EventCallback& callback) override;
 
  private:
   // Trace files to consume.

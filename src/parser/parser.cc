@@ -47,13 +47,13 @@ bool Parser::AddTraceFile(const std::wstring& path) {
   return false;
 }
 
-void Parser::Parse(const base::Observer<event::Event>& observer) {
+void Parser::Parse(const EventCallback& callback) {
   // TODO(etienneb): This is a patch, there is no event ordering.
   //     We should start thread for each active parser.
   //     The parser class should manage and merge events in order.
   ParserList::iterator parser = parsers_.begin();
   for (; parser != parsers_.end(); ++parser) {
-    (*parser)->Parse(observer);
+    (*parser)->Parse(callback);
   }
 }
 

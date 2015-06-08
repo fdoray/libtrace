@@ -40,25 +40,21 @@ namespace {
 using parser::Parser;
 using event::Event;
 
-class EventDumper {
- public:
-  void Receive(const Event& event) const {
-    std::string output;
-    if (!event::ToString(event, &output)) {
-      LOG(INFO) << "Cannot serialize event.";
-      return;
-    }
-
-    std::cout << output << std::endl;
+void ReceiveEvent(const Event& event) {
+  std::string output;
+  if (!event::ToString(event, &output)) {
+    LOG(INFO) << "Cannot serialize event.";
+    return;
   }
-};
+
+  std::cout << output << std::endl;
+}
 
 }  // namespace
 
 int wmain(int argc, wchar_t* argv[], wchar_t* /*envp */ [])
 {
   parser::Parser parser;
-  EventDumper dumper;
 
   std::unique_ptr<parser::ParserImpl> etw_parser(new parser::etw::ETWParser());
   parser.RegisterParser(std::move(etw_parser));
@@ -70,7 +66,7 @@ int wmain(int argc, wchar_t* argv[], wchar_t* /*envp */ [])
     }
   }
 
-  parser.Parse(base::MakeObserver(&dumper, &EventDumper::Receive));
+  parser.Parse(&ReceiveEvent);
 
   return 0;
 }

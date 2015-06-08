@@ -25,7 +25,7 @@
 
 #include "parser/etw/etw_parser.h"
 
-#include "base/observer.h"
+#include "base/bind_object.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -36,9 +36,9 @@ namespace {
 
 using testing::_;
 
-class MockObserver : public base::Observer<event::Event> {
+class MockObserver {
  public:
-  MOCK_CONST_METHOD1(Receive, void(const event::Event& event));
+  MOCK_METHOD1(Receive, void(const event::Event& event));
 };
 
 }  // namespace
@@ -52,7 +52,7 @@ TEST(EtwParserTest, AddTraceFile) {
 
   parser::Parser parser;
   parser.RegisterParser(std::move(impl));
-  parser.Parse(observer);
+  parser.Parse(base::BindObject(&MockObserver::Receive, &observer));
 
   EXPECT_FALSE(parser.AddTraceFile(L"dummy.log"));
   EXPECT_TRUE(parser.AddTraceFile(L"dummy.etl"));
@@ -66,7 +66,7 @@ TEST(EtwParserTest, ParseWithoutTrace) {
 
   parser::Parser parser;
   parser.RegisterParser(std::move(impl));
-  parser.Parse(base::MakeObserver(&observer, &MockObserver::Receive));
+  parser.Parse(base::BindObject(&MockObserver::Receive, &observer));
 }
 
 // TODO(etienneb): Find a way to implement a complete test for a "etl" file.

@@ -25,6 +25,7 @@
 
 #include "parser/parser.h"
 
+#include "base/bind_object.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -39,12 +40,12 @@ using testing::Return;
 class MockParser : public parser::ParserImpl {
  public:
   MOCK_METHOD1(AddTraceFile, bool(const std::wstring&));
-  MOCK_METHOD1(Parse, void(const base::Observer<event::Event>& observer));
+  MOCK_METHOD1(Parse, void(const parser::ParserImpl::EventCallback& callback));
 };
 
-class MockObserver : public base::Observer<event::Event> {
+class MockObserver {
  public:
-  MOCK_CONST_METHOD1(Receive, void(const event::Event& event));
+  MOCK_METHOD1(Receive, void(const event::Event& event));
 };
 
 }  // namespace
@@ -61,14 +62,17 @@ TEST(ParserTest, Parse) {
   std::unique_ptr<MockParser> impl(new MockParser());
   std::wstring filename(L"dummy");
 
+  const parser::Parser::EventCallback callback(
+      base::BindObject(&MockObserver::Receive, &observer));
+
   EXPECT_CALL(*impl.get(), AddTraceFile(Ref(filename)))
      .WillOnce(Return(true));
-  EXPECT_CALL(*impl.get(), Parse(Ref(observer)));
+  EXPECT_CALL(*impl.get(), Parse(Ref(callback)));
 
   parser.RegisterParser(std::move(impl));
   EXPECT_TRUE(parser.AddTraceFile(filename));
 
-  parser.Parse(observer);
+  parser.Parse(callback);
 }
 
 }  // namespace parser

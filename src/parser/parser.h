@@ -33,7 +33,7 @@
 //     2) Register needed parser implementations,
 //     3) Add trace files to parse,
 //     4) Call the Parse() method,
-//     5) Receive the decoded events through the observer.
+//     5) Receive the decoded events through the callback.
 //
 // The parser is intented to be used like that:
 //
@@ -41,16 +41,16 @@
 //   parser.RegisterParser(new parser::dummy::DummyParser());
 //   if (!parser.AddTraceFile("trace.dummy")
 //     return false;
-//   parser.Parse(base::MakeObserver(&observer, &Observer::Receive));
+//   parser.Parse(&Callback);
 
 #ifndef PARSER_PARSER_H_
 #define PARSER_PARSER_H_
 
+#include <functional>
 #include <list>
 #include <string>
 
 #include "base/base.h"
-#include "base/observer.h"
 #include "event/event.h"
 
 namespace parser {
@@ -62,6 +62,9 @@ class ParserImpl;
 class Parser {
  public:
   typedef std::list<ParserImpl*> ParserList;
+
+  // Callback invoked when an event is read.
+  typedef std::function<void(const event::Event& value)> EventCallback;
 
   // Constructor.
   Parser() { }
@@ -79,9 +82,9 @@ class Parser {
   bool AddTraceFile(const std::wstring& path);
 
   // Parses the trace files added with AddTraceFile() and sends the resulting
-  // events to the provided observer.
-  // @param observer an observer that will receive the decoded events.
-  void Parse(const base::Observer<event::Event>& observer);
+  // events to the provided callback.
+  // @param callback a callback that will receive the decoded events.
+  void Parse(const EventCallback& callback);
 
  private:
   ParserList parsers_;
@@ -92,7 +95,9 @@ class Parser {
 // A parser implementation for a specific file format.
 class ParserImpl {
  public:
-   virtual ~ParserImpl() { }
+  typedef Parser::EventCallback EventCallback;
+  
+  virtual ~ParserImpl() { }
 
   // Adds a trace file to the list of traces to parse.
   // @param path absolute path to the trace file.
@@ -100,9 +105,9 @@ class ParserImpl {
   virtual bool AddTraceFile(const std::wstring& path) = 0;
 
   // Parses the trace files added with AddTraceFile() and sends the resulting
-  // events to the provided observer.
-  // @param observer an observer that will receive the decoded events.
-  virtual void Parse(const base::Observer<event::Event>& observer) = 0;
+  // events to the provided callback.
+  // @param callback a callback that will receive the decoded events.
+  virtual void Parse(const EventCallback& callback) = 0;
 };
 
 }  // namespace parser

@@ -92,7 +92,7 @@ include_directories(src)
 
 add_library(base
     src/base/base.h
-    src/base/observer.h
+    src/base/bind_object.h
     src/base/logging.cc
     src/base/logging.h
     src/base/string_utils.cc
@@ -150,7 +150,6 @@ endif()
 
 if(GMOCK_FOUND)
 add_executable(unittests
-    src/base/observer_unittest.cc
     src/base/logging_unittest.cc
     src/base/string_utils_unittest.cc
     ${BASE_WIN_UNITTEST}
