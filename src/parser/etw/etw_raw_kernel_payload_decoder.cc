@@ -1243,9 +1243,9 @@ bool DecodeProcessStartEndDefunctPayload(Decoder* decoder,
     return false;
   }
 
-  if (version >= 1 &&
+  if (version >= 1 && (
       !Decode<UIntValue>("SessionId", decoder, fields) ||
-      !Decode<IntValue>("ExitStatus", decoder, fields)) {
+      !Decode<IntValue>("ExitStatus", decoder, fields))) {
     return false;
   }
 
