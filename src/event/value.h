@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The LibTrace Authors.
+// Copyright (c) 2015 The LibTrace Authors.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,17 +30,17 @@
 //
 // Usage examples:
 // - Creation
-//   scoped_ptr<ArrayValue> my_array(new ArrayValue());
+//   std::unique_ptr<ArrayValue> my_array(new ArrayValue());
 //   my_array->Append<IntValue>(42);
 //   my_array->Append<IntValue>(1024);
 //   my_array->Append<StringValue>("end");
 //
-//   scoped_ptr<StructValue> top_struct(new StructValue());
+//   std::unique_ptr<StructValue> top_struct(new StructValue());
 //   top_struct->AddField("name1", my_array.Pass());
 //   top_struct->AddField<LongValue>("name2", new LongValue(4U));
 //
 // - Introspection and casting
-//   scoped_ptr<IntValue> value(new IntValue(42));
+//   std::unique_ptr<IntValue> value(new IntValue(42));
 //   if (value->IsInteger())
 //    // value is an integer.
 //
@@ -49,13 +49,13 @@
 //    // Use int_value to access IntValue specific methods.
 //
 // - Value accessor
-//   scoped_ptr<IntValue> value(new IntValue(42));
+//   std::unique_ptr<IntValue> value(new IntValue(42));
 //
-//   uint32 result = 0;
+//   uint32_t result = 0;
 //   if (value->GetAsUInteger(&result))
 //     // do something with result
 //
-//   int32 result = IntValue::GetValue(result.get());
+//   int32_t result = IntValue::GetValue(result.get());
 //   // do something with result
 
 #ifndef EVENT_VALUE_H_
@@ -64,12 +64,12 @@
 #include <cstdlib>
 #include <list>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "base/base.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 
 namespace event {
 
@@ -119,10 +119,10 @@ class Value {
   // @returns true when the conversion is valid, false otherwise and |value|
   // stays unchanged.
   // @{
-  bool GetAsInteger(int32* value) const;
-  bool GetAsUInteger(uint32* value) const;
-  bool GetAsLong(int64* value) const;
-  bool GetAsULong(uint64* value) const;
+  bool GetAsInteger(int32_t* value) const;
+  bool GetAsUInteger(uint32_t* value) const;
+  bool GetAsLong(int64_t* value) const;
+  bool GetAsULong(uint64_t* value) const;
   bool GetAsFloating(double* value) const;
   bool GetAsString(std::string* value) const;
   bool GetAsWString(std::wstring* value) const;
@@ -146,14 +146,14 @@ class ScalarValue : public Value {
 
   // Overridden from Value:
   // @{
-  virtual ValueType GetType() const OVERRIDE;
-  virtual bool IsScalar() const OVERRIDE;
-  virtual bool IsAggregate() const OVERRIDE;
-  virtual bool IsInteger() const OVERRIDE;
-  virtual bool IsSigned() const OVERRIDE;
-  virtual bool IsFloating() const OVERRIDE;
+  virtual ValueType GetType() const override;
+  virtual bool IsScalar() const override;
+  virtual bool IsAggregate() const override;
+  virtual bool IsInteger() const override;
+  virtual bool IsSigned() const override;
+  virtual bool IsFloating() const override;
 
-  virtual bool Equals(const Value* value) const OVERRIDE;
+  virtual bool Equals(const Value* value) const override;
   // @}
 
   // Retrieve the value holded in this wrapper.
@@ -190,14 +190,14 @@ class ScalarValue : public Value {
 };
 
 typedef ScalarValue<bool, VALUE_BOOL> BoolValue;
-typedef ScalarValue<int8, VALUE_CHAR> CharValue;
-typedef ScalarValue<uint8, VALUE_UCHAR> UCharValue;
-typedef ScalarValue<int16, VALUE_SHORT> ShortValue;
-typedef ScalarValue<uint16, VALUE_USHORT> UShortValue;
-typedef ScalarValue<int32, VALUE_INT> IntValue;
-typedef ScalarValue<uint32, VALUE_UINT> UIntValue;
-typedef ScalarValue<int64, VALUE_LONG> LongValue;
-typedef ScalarValue<uint64, VALUE_ULONG> ULongValue;
+typedef ScalarValue<int8_t, VALUE_CHAR> CharValue;
+typedef ScalarValue<uint8_t, VALUE_UCHAR> UCharValue;
+typedef ScalarValue<int16_t, VALUE_SHORT> ShortValue;
+typedef ScalarValue<uint16_t, VALUE_USHORT> UShortValue;
+typedef ScalarValue<int32_t, VALUE_INT> IntValue;
+typedef ScalarValue<uint32_t, VALUE_UINT> UIntValue;
+typedef ScalarValue<int64_t, VALUE_LONG> LongValue;
+typedef ScalarValue<uint64_t, VALUE_ULONG> ULongValue;
 typedef ScalarValue<std::string, VALUE_STRING> StringValue;
 typedef ScalarValue<std::wstring, VALUE_WSTRING> WStringValue;
 typedef ScalarValue<float, VALUE_FLOAT> FloatValue;
@@ -208,12 +208,12 @@ class AggregateValue : public Value {
  public:
   // Overridden from Value:
   // @{
-  virtual ValueType GetType() const OVERRIDE;
-  virtual bool IsScalar() const OVERRIDE;
-  virtual bool IsAggregate() const OVERRIDE;
-  virtual bool IsInteger() const OVERRIDE;
-  virtual bool IsSigned() const OVERRIDE;
-  virtual bool IsFloating() const OVERRIDE;
+  virtual ValueType GetType() const override;
+  virtual bool IsScalar() const override;
+  virtual bool IsAggregate() const override;
+  virtual bool IsInteger() const override;
+  virtual bool IsSigned() const override;
+  virtual bool IsFloating() const override;
   // @}
 };
 
@@ -235,15 +235,15 @@ class ArrayValue : public AggregateValue<VALUE_ARRAY> {
   // Appends a Value to the end of the sequence.
   // Take the ownership of |value|.
   // @param value the value to add.
-  void Append(scoped_ptr<Value> value);
+  void Append(std::unique_ptr<Value> value);
 
   // Allocates and appends a typed value to the array.
   // @tparam T a scalar value type (i.e. CharValue, IntValue, ...).
   // @param value the value to add.
   template<class T>
   void Append(const typename T::ScalarType& value) {
-    scoped_ptr<Value> ptr(new T(value));
-    Append(ptr.Pass());
+    std::unique_ptr<Value> ptr(new T(value));
+    Append(std::move(ptr));
   }
 
   // Appends to the end of the sequence a series of value.
@@ -291,10 +291,10 @@ class ArrayValue : public AggregateValue<VALUE_ARRAY> {
   // @returns true when the conversion is valid, false otherwise and |value|
   // stay unchanged.
   // @{
-  bool GetElementAsInteger(size_t index, int32* value) const;
-  bool GetElementAsUInteger(size_t index, uint32* value) const;
-  bool GetElementAsLong(size_t index, int64* value) const;
-  bool GetElementAsULong(size_t index, uint64* value) const;
+  bool GetElementAsInteger(size_t index, int32_t* value) const;
+  bool GetElementAsUInteger(size_t index, uint32_t* value) const;
+  bool GetElementAsLong(size_t index, int64_t* value) const;
+  bool GetElementAsULong(size_t index, uint64_t* value) const;
   bool GetElementAsFloating(size_t index, double* value) const;
   bool GetElementAsString(size_t index, std::string* value) const;
   bool GetElementAsWString(size_t index, std::wstring* value) const;
@@ -302,7 +302,7 @@ class ArrayValue : public AggregateValue<VALUE_ARRAY> {
 
   // Overridden from Value:
   // @{
-  virtual bool Equals(const Value* value) const OVERRIDE;
+  virtual bool Equals(const Value* value) const override;
   // @}
 
   // Iteration.
@@ -377,10 +377,10 @@ class StructValue : public AggregateValue<VALUE_STRUCT> {
   // @returns true when the conversion is valid, false otherwise and |value|
   // stay unchanged.
   // @{
-  bool GetFieldAsInteger(const std::string& name, int32* value) const;
-  bool GetFieldAsUInteger(const std::string& name, uint32* value) const;
-  bool GetFieldAsLong(const std::string& name, int64* value) const;
-  bool GetFieldAsULong(const std::string& name, uint64* value) const;
+  bool GetFieldAsInteger(const std::string& name, int32_t* value) const;
+  bool GetFieldAsUInteger(const std::string& name, uint32_t* value) const;
+  bool GetFieldAsLong(const std::string& name, int64_t* value) const;
+  bool GetFieldAsULong(const std::string& name, uint64_t* value) const;
   bool GetFieldAsFloating(const std::string& name, double* value) const;
   bool GetFieldAsString(const std::string& name, std::string* value) const;
   bool GetFieldAsWString(const std::string& name, std::wstring* value) const;
@@ -390,7 +390,7 @@ class StructValue : public AggregateValue<VALUE_STRUCT> {
   // @param name the name of the field.
   // @param value the value of the field.
   // @returns true if the field can be added, false otherwise.
-  bool AddField(const std::string& name, scoped_ptr<Value> value);
+  bool AddField(const std::string& name, std::unique_ptr<Value> value);
 
   // Add a field with name |name| to this structure.
   // @tparam T the type of the value of the field.
@@ -399,13 +399,13 @@ class StructValue : public AggregateValue<VALUE_STRUCT> {
   // @returns true if the field can be added, false otherwise.
   template<class T>
   bool AddField(const std::string& name, const typename T::ScalarType& value) {
-    scoped_ptr<Value> ptr(new T(value));
-    return AddField(name, ptr.Pass());
+    std::unique_ptr<Value> ptr(new T(value));
+    return AddField(name, std::move(ptr));
   }
 
   // Overridden from Value:
   // @{
-  virtual bool Equals(const Value* value) const OVERRIDE;
+  virtual bool Equals(const Value* value) const override;
   // @}
 
   // Iteration.

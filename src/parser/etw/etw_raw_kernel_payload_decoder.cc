@@ -25,6 +25,8 @@
 
 #include "parser/etw/etw_raw_kernel_payload_decoder.h"
 
+#include <memory>
+
 #include "base/logging.h"
 #include "event/value.h"
 #include "parser/decoder.h"
@@ -2385,8 +2387,8 @@ bool DecodeStackWalkPayload(Decoder* decoder,
   *operation = "Stack";
 
   // Deduce the number of stack pointers from the event size.
-  size_t num_stack_pointers = (decoder->RemainingBytes() - sizeof(int64) -
-                               2 * sizeof(uint32)) / sizeof(uint64);
+  size_t num_stack_pointers = (decoder->RemainingBytes() - sizeof(int64_t) -
+                               2 * sizeof(uint32_t)) / sizeof(uint64_t);
 
   // Decode the payload.
   if (!Decode<ULongValue>("EventTimeStamp", decoder, fields) ||
@@ -2555,7 +2557,7 @@ bool DecodeRawETWKernelPayload(const std::string& provider_id,
                                size_t payload_size,
                                std::string* operation,
                                std::string* category,
-                               scoped_ptr<event::Value>* decoded_payload) {
+                               std::unique_ptr<event::Value>* decoded_payload) {
   DCHECK(payload != NULL || payload_size == 0);  // note: payload can be NULL.
   DCHECK(operation != NULL);
   DCHECK(category != NULL);
@@ -2563,7 +2565,7 @@ bool DecodeRawETWKernelPayload(const std::string& provider_id,
 
   // Create the byte decoder for the encoded payload.
   Decoder decoder(payload, payload_size);
-  scoped_ptr<StructValue> fields(new StructValue);
+  std::unique_ptr<StructValue> fields(new StructValue);
 
   // Dispatch event by provider (GUID).
   if (provider_id == kEventTraceEventProviderId) {
@@ -2666,7 +2668,7 @@ bool DecodeRawETWKernelPayload(const std::string& provider_id,
     return false;
 
   // Successful decoding of this event.
-  *decoded_payload = fields.Pass();
+  *decoded_payload = std::move(fields);
   return true;
 }
 

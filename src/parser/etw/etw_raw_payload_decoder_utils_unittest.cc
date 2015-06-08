@@ -51,7 +51,7 @@ TEST(EtwDecoderUtilsTest, DecodeUInt32) {
   Decoder decoder(&kSmallBuffer[0], kSmallBufferLength);
   EXPECT_TRUE(Decode<UIntValue>("integer", &decoder, &fields));
 
-  uint32 value;
+  uint32_t value;
   EXPECT_TRUE(fields.GetFieldAsUInteger("integer", &value));
   EXPECT_EQ(0x04030201, value);
 }
@@ -64,10 +64,10 @@ TEST(EtwDecoderUtilsTest, DecodeArrayOfShort) {
 
   const ArrayValue* decoded = NULL;
   EXPECT_TRUE(fields.GetFieldAs<ArrayValue>("shorts", &decoded));
-  uint32 element1 = 0;
-  uint32 element2 = 0;
-  uint32 element3 = 0;
-  uint32 element4 = 0;
+  uint32_t element1 = 0;
+  uint32_t element2 = 0;
+  uint32_t element3 = 0;
+  uint32_t element4 = 0;
   EXPECT_TRUE(decoded->GetElementAsUInteger(0, &element1));
   EXPECT_TRUE(decoded->GetElementAsUInteger(1, &element2));
   EXPECT_TRUE(decoded->GetElementAsUInteger(2, &element3));
@@ -78,7 +78,7 @@ TEST(EtwDecoderUtilsTest, DecodeArrayOfShort) {
   EXPECT_EQ(element4, 0x0807);
 
   // There is no element at offset 4.
-  uint32 no_element = 0;
+  uint32_t no_element = 0;
   EXPECT_FALSE(decoded->GetElementAsUInteger(4, &no_element));
   EXPECT_EQ(no_element, 0);
 
@@ -92,8 +92,8 @@ TEST(EtwDecoderUtilsTest, DecodeUInteger32) {
   EXPECT_TRUE(DecodeUInteger("test1", false, &decoder, &fields));
   EXPECT_TRUE(DecodeUInteger("test2", false, &decoder, &fields));
 
-  uint32 test1 = 0;
-  uint32 test2 = 0;
+  uint32_t test1 = 0;
+  uint32_t test2 = 0;
   EXPECT_TRUE(fields.GetFieldAsUInteger("test1", &test1));
   EXPECT_TRUE(fields.GetFieldAsUInteger("test2", &test2));
   EXPECT_EQ(test1, 0x04030201U);
@@ -108,7 +108,7 @@ TEST(EtwDecoderUtilsTest, DecodeUInteger64) {
   Decoder decoder(&kSmallBuffer[0], kSmallBufferLength);
   EXPECT_TRUE(DecodeUInteger("test", true, &decoder, &fields));
 
-  uint64 test = 0;
+  uint64_t test = 0;
   EXPECT_TRUE(fields.GetFieldAsULong("test", &test));
   EXPECT_EQ(test, 0x0807060504030201ULL);
 
@@ -163,17 +163,17 @@ TEST(EtwDecoderUtilsTest, DecodeSID) {
   const StructValue* sid = NULL;
   ASSERT_TRUE(fields.GetFieldAs<StructValue>("sid", &sid));
 
-  uint64 psid = 0;
+  uint64_t psid = 0;
   EXPECT_TRUE(sid->GetFieldAsULong("PSid", &psid));
   EXPECT_EQ(0x0403020104030201ULL, psid);
 
-  uint32 attributes = 0;
+  uint32_t attributes = 0;
   EXPECT_TRUE(sid->GetFieldAsUInteger("Attributes", &attributes));
   EXPECT_EQ(0x02030405, attributes);
 }
 
 TEST(EtwDecoderUtilsTest, DecodeSystemTime) {
-  const int8 buffer[] = { 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8, 0};
+  const char buffer[] = { 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8, 0};
 
   Decoder decoder(&buffer[0], sizeof(buffer));
   StructValue fields;
@@ -183,14 +183,14 @@ TEST(EtwDecoderUtilsTest, DecodeSystemTime) {
   const StructValue* time = NULL;
   ASSERT_TRUE(fields.GetFieldAs<StructValue>("time", &time));
 
-  int32 wYear = 0;
-  int32 wMonth = 0;
-  int32 wDayOfWeek = 0;
-  int32 wDay = 0;
-  int32 wHour = 0;
-  int32 wMinute = 0;
-  int32 wSecond = 0;
-  int32 wMilliseconds = 0;
+  int32_t wYear = 0;
+  int32_t wMonth = 0;
+  int32_t wDayOfWeek = 0;
+  int32_t wDay = 0;
+  int32_t wHour = 0;
+  int32_t wMinute = 0;
+  int32_t wSecond = 0;
+  int32_t wMilliseconds = 0;
 
   EXPECT_TRUE(time->GetFieldAsInteger("wYear", &wYear));
   EXPECT_TRUE(time->GetFieldAsInteger("wMonth", &wMonth));
@@ -212,7 +212,7 @@ TEST(EtwDecoderUtilsTest, DecodeSystemTime) {
 }
 
 TEST(EtwDecoderUtilsTest, DecodeTimeZoneInformation) {
-  const int8 buffer[] = {
+  const char buffer[] = {
       // Bias
       1, 2, 3, 4,
       // StandardName
@@ -253,9 +253,9 @@ TEST(EtwDecoderUtilsTest, DecodeTimeZoneInformation) {
   const StructValue* info = NULL;
   ASSERT_TRUE(fields.GetFieldAs<StructValue>("info", &info));
 
-  int32 bias = 0;
-  int32 standard_bias = 0;
-  int32 daylight_bias = 0;
+  int32_t bias = 0;
+  int32_t standard_bias = 0;
+  int32_t daylight_bias = 0;
   EXPECT_TRUE(info->GetFieldAsInteger("Bias", &bias));
   EXPECT_TRUE(info->GetFieldAsInteger("StandardBias", &standard_bias));
   EXPECT_TRUE(info->GetFieldAsInteger("DaylightBias", &daylight_bias));

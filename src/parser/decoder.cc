@@ -40,8 +40,8 @@ using event::WStringValue;
 
 }  // namespace
 
-scoped_ptr<StringValue> Decoder::DecodeString() {
-  scoped_ptr<StringValue> result;
+std::unique_ptr<StringValue> Decoder::DecodeString() {
+  std::unique_ptr<StringValue> result;
   size_t start = position_;
   while (RemainingBytes() >= sizeof(char)) {
     char c = buffer_[position_];
@@ -54,11 +54,11 @@ scoped_ptr<StringValue> Decoder::DecodeString() {
     }
   }
 
-  return result.Pass();
+  return std::move(result);
 }
 
-scoped_ptr<WStringValue> Decoder::DecodeWString() {
-  scoped_ptr<WStringValue> result;
+std::unique_ptr<WStringValue> Decoder::DecodeWString() {
+  std::unique_ptr<WStringValue> result;
   size_t start = position_;
   while (RemainingBytes() >= sizeof(wchar_t)) {
     wchar_t c = *reinterpret_cast<const wchar_t*>(&buffer_[position_]);
@@ -72,13 +72,13 @@ scoped_ptr<WStringValue> Decoder::DecodeWString() {
     }
   }
 
-  return result.Pass();
+  return std::move(result);
 }
 
-scoped_ptr<WStringValue> Decoder::DecodeW16String() {
+std::unique_ptr<WStringValue> Decoder::DecodeW16String() {
   // The decoding cannot use native wchar_t because it can be 2 bytes or
   // 4 bytes.
-  scoped_ptr<WStringValue> result;
+  std::unique_ptr<WStringValue> result;
   std::wstringstream ss;
   while (RemainingBytes() >= 2) {
     wchar_t c = buffer_[position_] | (buffer_[position_ + 1]  << 8);
@@ -92,18 +92,18 @@ scoped_ptr<WStringValue> Decoder::DecodeW16String() {
     ss << c;
   }
 
-  return result.Pass();
+  return std::move(result);
 }
 
-scoped_ptr<WStringValue> Decoder::DecodeFixedW16String(size_t length) {
+std::unique_ptr<WStringValue> Decoder::DecodeFixedW16String(size_t length) {
   // The decoding cannot use native wchar_t because it can be 2 bytes or
   // 4 bytes.
-  scoped_ptr<WStringValue> result;
+  std::unique_ptr<WStringValue> result;
   std::wstringstream ss;
 
   // Check whether there is enough characters.
   if (RemainingBytes() < 2 * length)
-    return result.Pass();
+    return std::move(result);
 
   // Compute the position after consuming the array.
   size_t next_position = position_ + 2 * length;
@@ -125,7 +125,7 @@ scoped_ptr<WStringValue> Decoder::DecodeFixedW16String(size_t length) {
   // Create and return the resulting value.
   result.reset(new WStringValue(ss.str()));
 
-  return result.Pass();
+  return std::move(result);
 }
 
 bool Decoder::Skip(size_t size) {

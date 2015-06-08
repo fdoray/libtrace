@@ -29,7 +29,6 @@
 #include <string>
 
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "event/value.h"
 #include "parser/decoder.h"
 
@@ -48,10 +47,10 @@ bool Decode(const std::string& name, Decoder* decoder,
   DCHECK(decoder != NULL);
   DCHECK(fields != NULL);
 
-  scoped_ptr<event::Value> decoded(decoder->Decode<T>());
+  std::unique_ptr<event::Value> decoded(decoder->Decode<T>());
 
   if (decoded.get() == NULL ||
-      !fields->AddField(name, decoded.Pass())) {
+      !fields->AddField(name, std::move(decoded))) {
     return false;
   }
 
@@ -73,10 +72,10 @@ bool DecodeArray(const std::string& name,
   DCHECK(decoder != NULL);
   DCHECK(fields != NULL);
 
-  scoped_ptr<event::ArrayValue> decoded(decoder->DecodeArray<T>(length));
+  std::unique_ptr<event::ArrayValue> decoded(decoder->DecodeArray<T>(length));
 
   if (decoded.get() == NULL ||
-      !fields->AddField(name, decoded.PassAs<event::Value>())) {
+      !fields->AddField(name, std::move(decoded))) {
     return false;
   }
 

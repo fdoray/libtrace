@@ -45,13 +45,13 @@ class MockObserver : public base::Observer<event::Event> {
 
 
 TEST(EtwParserTest, AddTraceFile) {
-  scoped_ptr<parser::ParserImpl> impl(new parser::etw::ETWParser());
+  std::unique_ptr<parser::ParserImpl> impl(new parser::etw::ETWParser());
   MockObserver observer;
 
   EXPECT_CALL(observer, Receive(_)).Times(0);
 
   parser::Parser parser;
-  parser.RegisterParser(impl.Pass());
+  parser.RegisterParser(std::move(impl));
   parser.Parse(observer);
 
   EXPECT_FALSE(parser.AddTraceFile("dummy.log"));
@@ -59,13 +59,13 @@ TEST(EtwParserTest, AddTraceFile) {
 }
 
 TEST(EtwParserTest, ParseWithoutTrace) {
-  scoped_ptr<parser::ParserImpl> impl(new parser::etw::ETWParser());
+  std::unique_ptr<parser::ParserImpl> impl(new parser::etw::ETWParser());
   MockObserver observer;
 
   EXPECT_CALL(observer, Receive(_) ).Times(0);
 
   parser::Parser parser;
-  parser.RegisterParser(impl.Pass());
+  parser.RegisterParser(std::move(impl));
   parser.Parse(base::MakeObserver(&observer, &MockObserver::Receive));
 }
 

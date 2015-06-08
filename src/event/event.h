@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The LibTrace Authors.
+// Copyright (c) 2015 The LibTrace Authors.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,15 +26,17 @@
 #ifndef EVENT_EVENT_H_
 #define EVENT_EVENT_H_
 
+#include <memory>
+#include <stdint.h>
+
 #include "base/base.h"
-#include "base/scoped_ptr.h"
 
 namespace event {
 
 // Forward declaration (see value.h).
 class Value;
 
-typedef uint64 Timestamp;
+typedef uint64_t Timestamp;
 
 // This class contains a single event and its payload.
 class Event {
@@ -43,7 +45,7 @@ class Event {
   // Constructor.
   // @param timestamp the timestamp at which this event occurred.
   // @param payload the payload of this event.
-  Event(Timestamp timestamp, scoped_ptr<const Value> payload);
+  Event(Timestamp timestamp, std::unique_ptr<const Value> payload);
 
   // Accessors.
   // @{
@@ -58,7 +60,7 @@ class Event {
 
  private:
   Timestamp timestamp_;
-  const scoped_ptr<const Value> payload_;
+  const std::unique_ptr<const Value> payload_;
 
   DISALLOW_COPY_AND_ASSIGN(Event);
 };

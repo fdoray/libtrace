@@ -17,7 +17,7 @@ if(MSVC)
   endif()
 elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   # Update if necessary
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-long-long -pedantic-errors")
 endif()
 
 # Force a unicode project.
@@ -95,7 +95,6 @@ add_library(base
     src/base/logging.h
     src/base/string_utils.cc
     src/base/string_utils.h
-    src/base/scoped_ptr.h
     ${BASE_WIN_SOURCES}
     )
     
@@ -141,7 +140,6 @@ if(GMOCK_FOUND)
 add_executable(unittests
     src/base/observer_unittest.cc
     src/base/logging_unittest.cc
-    src/base/scoped_ptr_unittest.cc
     src/base/string_utils_unittest.cc
     ${BASE_WIN_UNITTEST}
     src/event/event_unittest.cc

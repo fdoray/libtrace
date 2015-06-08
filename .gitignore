@@ -23,6 +23,7 @@
 /Debug
 /ipch
 /Release
+/Win32
 
 # CMake temporary files.
 *.dir

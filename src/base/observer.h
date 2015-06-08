@@ -45,7 +45,7 @@ class CallbackObserver : public Observer<T> {
       : base_(base), thunk_(thunk) {
   }
 
-  virtual void Receive(const T& data) const OVERRIDE {
+  virtual void Receive(const T& data) const override {
     DCHECK(base_ != NULL);
     (base_->*thunk_)(data);
   }

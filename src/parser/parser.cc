@@ -34,7 +34,7 @@ Parser::~Parser() {
     delete *it;
 }
 
-void Parser::RegisterParser(scoped_ptr<ParserImpl> parser) {
+void Parser::RegisterParser(std::unique_ptr<ParserImpl> parser) {
   parsers_.push_back(parser.release());
 }
 

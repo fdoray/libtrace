@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The LibTrace Authors.
+// Copyright (c) 2015 The LibTrace Authors.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,9 +28,9 @@
 
 namespace event {
 
-Event::Event(Timestamp timestamp, scoped_ptr<const Value> payload)
+Event::Event(Timestamp timestamp, std::unique_ptr<const Value> payload)
     : timestamp_(timestamp),
-      payload_(payload.Pass()) {
+      payload_(std::move(payload)) {
 }
 
 Timestamp Event::timestamp() const {

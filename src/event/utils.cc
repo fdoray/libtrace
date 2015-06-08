@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The LibTrace Authors.
+// Copyright (c) 2015 The LibTrace Authors.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -39,14 +39,14 @@ bool ToString(const Value* value, size_t indent, std::stringstream* result) {
   DCHECK(result != NULL);
 
   if (value->IsScalar()) {
-    int8 char_value = 0;
-    uint8 uchar_value = 0;
-    int16 short_value = 0;
-    uint16 ushort_value = 0;
-    int32 int_value = 0;
-    uint32 uint_value = 0;
-    int64 long_value = 0;
-    uint64 ulong_value = 0;
+    int8_t char_value = 0;
+    uint8_t uchar_value = 0;
+    int16_t short_value = 0;
+    uint16_t ushort_value = 0;
+    int32_t int_value = 0;
+    uint32_t uint_value = 0;
+    int64_t long_value = 0;
+    uint64_t ulong_value = 0;
     float float_value = 0;
     double double_value = 0;
     std::string string_value;

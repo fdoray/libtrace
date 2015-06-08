@@ -25,8 +25,9 @@
 
 #include "parser/etw/etw_raw_kernel_payload_decoder.h"
 
+#include <memory>
+
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "event/utils.h"
 #include "event/value.h"
 #include "gtest/gtest.h"
@@ -2263,39 +2264,39 @@ const unsigned char kPageFaultVirtualFreePayloadV2[] = {
     0x04, 0x18, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00
     };
 
-scoped_ptr<Value> MakeSID32(uint32 psid,
-                            uint32 attributes,
-                            const unsigned char bytes[],
-                            size_t length) {
-  scoped_ptr<StructValue> sid_struct(new StructValue());
+std::unique_ptr<Value> MakeSID32(uint32_t psid,
+                                 uint32_t attributes,
+                                 const unsigned char bytes[],
+                                 size_t length) {
+  std::unique_ptr<StructValue> sid_struct(new StructValue());
   sid_struct->AddField<UIntValue>("PSid", psid);
   sid_struct->AddField<UIntValue>("Attributes", attributes);
 
-  scoped_ptr<ArrayValue> sid_array(new ArrayValue());
+  std::unique_ptr<ArrayValue> sid_array(new ArrayValue());
   sid_array->AppendAll<UCharValue>(bytes, length);
-  sid_struct->AddField("Sid", sid_array.PassAs<Value>());
+  sid_struct->AddField("Sid", std::move(sid_array));
 
-  return sid_struct.PassAs<Value>();
+  return std::move(sid_struct);
 }
 
-scoped_ptr<Value> MakeSID64(uint64 psid,
-                            uint32 attributes,
-                            const unsigned char bytes[],
-                            size_t length) {
-  scoped_ptr<StructValue> sid_struct(new StructValue());
+std::unique_ptr<Value> MakeSID64(uint64_t psid,
+                                 uint32_t attributes,
+                                 const unsigned char bytes[],
+                                 size_t length) {
+  std::unique_ptr<StructValue> sid_struct(new StructValue());
   sid_struct->AddField<ULongValue>("PSid", psid);
   sid_struct->AddField<UIntValue>("Attributes", attributes);
 
-  scoped_ptr<ArrayValue> sid_array(new ArrayValue());
+  std::unique_ptr<ArrayValue> sid_array(new ArrayValue());
   sid_array->AppendAll<UCharValue>(bytes, length);
-  sid_struct->AddField("Sid", sid_array.PassAs<Value>());
+  sid_struct->AddField("Sid", std::move(sid_array));
 
-  return sid_struct.PassAs<Value>();
+  return std::move(sid_struct);
 }
 
-scoped_ptr<Value> MakeSystemTime(int16 year, int16 month, int16 dayOfWeek,
-    int16 day, int16 hour, int16 minute, int16 second, int16 milliseconds) {
-  scoped_ptr<StructValue> systemtime_struct(new StructValue());
+std::unique_ptr<Value> MakeSystemTime(int16_t year, int16_t month, int16_t dayOfWeek,
+    int16_t day, int16_t hour, int16_t minute, int16_t second, int16_t milliseconds) {
+  std::unique_ptr<StructValue> systemtime_struct(new StructValue());
   systemtime_struct->AddField<ShortValue>("wYear", year);
   systemtime_struct->AddField<ShortValue>("wMonth", month);
   systemtime_struct->AddField<ShortValue>("wDayOfWeek", dayOfWeek);
@@ -2305,7 +2306,7 @@ scoped_ptr<Value> MakeSystemTime(int16 year, int16 month, int16 dayOfWeek,
   systemtime_struct->AddField<ShortValue>("wSecond", second);
   systemtime_struct->AddField<ShortValue>("wMilliseconds", milliseconds);
 
-  return systemtime_struct.PassAs<Value>();
+  return std::move(systemtime_struct);
 }
 
 }  // namespace
@@ -2313,7 +2314,7 @@ scoped_ptr<Value> MakeSystemTime(int16 year, int16 month, int16 dayOfWeek,
 TEST(EtwRawDecoderTest, EventTraceHeaderV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kEventTraceEventProviderId,
           kVersion2, kEventTraceEventHeaderOpcode, k64bit,
@@ -2322,21 +2323,21 @@ TEST(EtwRawDecoderTest, EventTraceHeaderV2) {
           &operation, &category, &fields));
 
   // Expected TimeZone structure.
-  scoped_ptr<StructValue> timezone(new StructValue);
+  std::unique_ptr<StructValue> timezone(new StructValue);
   timezone->AddField<IntValue>("Bias", 0x12C);
   const std::wstring standard_name = L"@tzres.dll,-112";
   timezone->AddField<WStringValue>("StandardName", standard_name);
   timezone->AddField("StandardDate",
-      MakeSystemTime(0, 11, 0, 1, 2, 0, 0, 0).Pass());
+      MakeSystemTime(0, 11, 0, 1, 2, 0, 0, 0));
   timezone->AddField<IntValue>("StandardBias", 0);
   const std::wstring daylight_name = L"@tzres.dll,-111";
   timezone->AddField<WStringValue>("DaylightName", daylight_name);
   timezone->AddField("DaylightDate",
-      MakeSystemTime(0, 3, 0, 2, 2, 0, 0, 0).Pass());
+      MakeSystemTime(0, 3, 0, 2, 2, 0, 0, 0));
   timezone->AddField<IntValue>("DaylightBias", -60);
 
   // Expected structure.
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("BufferSize", 65536);
   expected->AddField<UIntValue>("Version", 83951878);
   expected->AddField<UIntValue>("ProviderVersion", 7601);
@@ -2352,7 +2353,7 @@ TEST(EtwRawDecoderTest, EventTraceHeaderV2) {
   expected->AddField<UIntValue>("CPUSpeed", 1696);
   expected->AddField<ULongValue>("LoggerName", 0);
   expected->AddField<ULongValue>("LogFileName", 0);
-  expected->AddField("TimeZoneInformation", timezone.PassAs<Value>());
+  expected->AddField("TimeZoneInformation", std::move(timezone));
   expected->AddField<UIntValue>("Padding", 0);
   expected->AddField<ULongValue>("BootTime", 130371020571099993ULL);
   expected->AddField<ULongValue>("PerfFreq", 1656445);
@@ -2373,7 +2374,7 @@ TEST(EtwRawDecoderTest, EventTraceHeaderV2) {
 TEST(EtwRawDecoderTest, EventTraceHeader32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kEventTraceEventProviderId,
           kVersion2, kEventTraceEventHeaderOpcode, k32bit,
@@ -2383,21 +2384,21 @@ TEST(EtwRawDecoderTest, EventTraceHeader32bitsV2) {
           &operation, &category, &fields));
 
   // Expected TimeZone structure.
-  scoped_ptr<StructValue> timezone(new StructValue);
+  std::unique_ptr<StructValue> timezone(new StructValue);
   timezone->AddField<IntValue>("Bias", 300);
   const std::wstring kStandardName = L"@tzres.dll,-112";
   timezone->AddField<WStringValue>("StandardName", kStandardName);
   timezone->AddField("StandardDate",
-      MakeSystemTime(0, 11, 0, 1, 2, 0, 0, 0).Pass());
+      MakeSystemTime(0, 11, 0, 1, 2, 0, 0, 0));
   timezone->AddField<IntValue>("StandardBias", 0);
   const std::wstring kDaylightName = L"@tzres.dll,-111";
   timezone->AddField<WStringValue>("DaylightName", kDaylightName);
   timezone->AddField("DaylightDate",
-      MakeSystemTime(0, 3, 0, 2, 2, 0, 0, 0).Pass());
+      MakeSystemTime(0, 3, 0, 2, 2, 0, 0, 0));
   timezone->AddField<IntValue>("DaylightBias", -60);
 
   // Expected structure.
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("BufferSize", 65536);
   expected->AddField<UIntValue>("Version", 83951878);
   expected->AddField<UIntValue>("ProviderVersion", 7600);
@@ -2413,7 +2414,7 @@ TEST(EtwRawDecoderTest, EventTraceHeader32bitsV2) {
   expected->AddField<UIntValue>("CPUSpeed", 2394);
   expected->AddField<UIntValue>("LoggerName", 5);
   expected->AddField<UIntValue>("LogFileName", 6);
-  expected->AddField("TimeZoneInformation", timezone.PassAs<Value>());
+  expected->AddField("TimeZoneInformation", std::move(timezone));
   expected->AddField<UIntValue>("Padding", 0);
   expected->AddField<ULongValue>("BootTime", 129484742215811967ULL);
   expected->AddField<ULongValue>("PerfFreq", 2337949);
@@ -2435,7 +2436,7 @@ TEST(EtwRawDecoderTest, EventTraceHeader32bitsV2) {
 TEST(EtwRawDecoderTest, EventTraceExtension32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kEventTraceEventProviderId,
           kVersion2, kEventTraceEventExtensionOpcode, k32bit,
@@ -2445,7 +2446,7 @@ TEST(EtwRawDecoderTest, EventTraceExtension32bitsV2) {
           &operation, &category, &fields));
 
   // Expected structure.
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("GroupMask1", 0);
   expected->AddField<UIntValue>("GroupMask2", 0);
   expected->AddField<UIntValue>("GroupMask3", 0);
@@ -2464,7 +2465,7 @@ TEST(EtwRawDecoderTest, EventTraceExtension32bitsV2) {
 TEST(EtwRawDecoderTest, EventTraceExtensionV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kEventTraceEventProviderId,
           kVersion2, kEventTraceEventExtensionOpcode, k64bit,
@@ -2474,7 +2475,7 @@ TEST(EtwRawDecoderTest, EventTraceExtensionV2) {
           &operation, &category, &fields));
 
   // Expected structure.
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("GroupMask1", 0);
   expected->AddField<UIntValue>("GroupMask2", 0);
   expected->AddField<UIntValue>("GroupMask3", 0);
@@ -2493,7 +2494,7 @@ TEST(EtwRawDecoderTest, EventTraceExtensionV2) {
 TEST(EtwRawDecoderTest, ImageUnloadV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion2, kImageUnloadOpcode, k64bit,
@@ -2501,7 +2502,7 @@ TEST(EtwRawDecoderTest, ImageUnloadV2) {
           sizeof(kImageUnloadPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("BaseAddress", 0x7FEF7780000ULL);
   expected->AddField<ULongValue>("ModuleSize", 0xE2000ULL);
   expected->AddField<UIntValue>("ProcessId", 5956U);
@@ -2524,7 +2525,7 @@ TEST(EtwRawDecoderTest, ImageUnloadV2) {
 TEST(EtwRawDecoderTest, ImageUnloadV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion3, kImageUnloadOpcode, k64bit,
@@ -2532,7 +2533,7 @@ TEST(EtwRawDecoderTest, ImageUnloadV3) {
           sizeof(kImageUnloadPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("BaseAddress", 140723059097600ULL);
   expected->AddField<ULongValue>("ModuleSize", 933888ULL);
   expected->AddField<UIntValue>("ProcessId", 2040U);
@@ -2557,7 +2558,7 @@ TEST(EtwRawDecoderTest, ImageUnloadV3) {
 TEST(EtwRawDecoderTest, ImageDCStart32bitsV0) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion0, kImageDCStartOpcode, k32bit,
@@ -2565,7 +2566,7 @@ TEST(EtwRawDecoderTest, ImageDCStart32bitsV0) {
           sizeof(kImageDCStartPayload32bitsV0),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("BaseAddress", 0x1160000);
   expected->AddField<UIntValue>("ModuleSize", 1695744);
   const std::wstring kFilename =
@@ -2580,7 +2581,7 @@ TEST(EtwRawDecoderTest, ImageDCStart32bitsV0) {
 TEST(EtwRawDecoderTest, ImageDCStart32bitsV1) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion1, kImageDCStartOpcode, k32bit,
@@ -2588,7 +2589,7 @@ TEST(EtwRawDecoderTest, ImageDCStart32bitsV1) {
           sizeof(kImageDCStartPayload32bitsV1),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("BaseAddress", 0x1160000);
   expected->AddField<UIntValue>("ModuleSize", 0x19E000);
   expected->AddField<UIntValue>("ProcessId", 7644);
@@ -2604,7 +2605,7 @@ TEST(EtwRawDecoderTest, ImageDCStart32bitsV1) {
 TEST(EtwRawDecoderTest, ImageDCStart32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion2, kImageDCStartOpcode, k32bit,
@@ -2612,7 +2613,7 @@ TEST(EtwRawDecoderTest, ImageDCStart32bitsV2) {
           sizeof(kImageDCStartPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("BaseAddress", 0x1160000);
   expected->AddField<UIntValue>("ModuleSize", 0x19E000);
   expected->AddField<UIntValue>("ProcessId", 7644U);
@@ -2636,7 +2637,7 @@ TEST(EtwRawDecoderTest, ImageDCStart32bitsV2) {
 TEST(EtwRawDecoderTest, ImageDCStartV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion2, kImageDCStartOpcode, k64bit,
@@ -2644,7 +2645,7 @@ TEST(EtwRawDecoderTest, ImageDCStartV2) {
           sizeof(kImageDCStartPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("BaseAddress", 18446735277664796672ULL);
   expected->AddField<ULongValue>("ModuleSize", 0x5E6000ULL);
   expected->AddField<UIntValue>("ProcessId", 0U);
@@ -2667,7 +2668,7 @@ TEST(EtwRawDecoderTest, ImageDCStartV2) {
 TEST(EtwRawDecoderTest, ImageDCStartV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion3, kImageDCStartOpcode, k64bit,
@@ -2675,7 +2676,7 @@ TEST(EtwRawDecoderTest, ImageDCStartV3) {
           sizeof(kImageDCStartPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("BaseAddress", 2001010688ULL);
   expected->AddField<ULongValue>("ModuleSize", 1474560ULL);
   expected->AddField<UIntValue>("ProcessId", 4U);
@@ -2701,7 +2702,7 @@ TEST(EtwRawDecoderTest, ImageDCStartV3) {
 TEST(EtwRawDecoderTest, ImageDCEndV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion2, kImageDCEndOpcode, true,
@@ -2709,7 +2710,7 @@ TEST(EtwRawDecoderTest, ImageDCEndV2) {
           sizeof(kImageDCEndPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("BaseAddress", 18446735277664866304ULL);
   expected->AddField<ULongValue>("ModuleSize", 0x5E5000ULL);
   expected->AddField<UIntValue>("ProcessId", 0U);
@@ -2732,7 +2733,7 @@ TEST(EtwRawDecoderTest, ImageDCEndV2) {
 TEST(EtwRawDecoderTest, ImageDCEndV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion3, kImageDCEndOpcode, true,
@@ -2740,7 +2741,7 @@ TEST(EtwRawDecoderTest, ImageDCEndV3) {
           sizeof(kImageDCEndPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("BaseAddress", 18446735279571529728ULL);
   expected->AddField<ULongValue>("ModuleSize", 7868416ULL);
   expected->AddField<UIntValue>("ProcessId", 0U);
@@ -2765,7 +2766,7 @@ TEST(EtwRawDecoderTest, ImageDCEndV3) {
 TEST(EtwRawDecoderTest, ImageLoadV0) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion0, kImageLoadOpcode, k64bit,
@@ -2773,7 +2774,7 @@ TEST(EtwRawDecoderTest, ImageLoadV0) {
           sizeof(kImageLoadPayloadV0),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("BaseAddress", 0x01160000);
   expected->AddField<UIntValue>("ModuleSize", 0x0019e000);
   const std::wstring kFilename =
@@ -2788,7 +2789,7 @@ TEST(EtwRawDecoderTest, ImageLoadV0) {
 TEST(EtwRawDecoderTest, ImageLoadV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion2, kImageLoadOpcode, k64bit,
@@ -2796,7 +2797,7 @@ TEST(EtwRawDecoderTest, ImageLoadV2) {
           sizeof(kImageLoadPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("BaseAddress", 0x71400000ULL);
   expected->AddField<ULongValue>("ModuleSize", 0x8000ULL);
   expected->AddField<UIntValue>("ProcessId", 3828U);
@@ -2819,7 +2820,7 @@ TEST(EtwRawDecoderTest, ImageLoadV2) {
 TEST(EtwRawDecoderTest, ImageLoadV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion3, kImageLoadOpcode, k64bit,
@@ -2827,7 +2828,7 @@ TEST(EtwRawDecoderTest, ImageLoadV3) {
           sizeof(kImageLoadPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("BaseAddress", 140699811512320ULL);
   expected->AddField<ULongValue>("ModuleSize", 430080U);
   expected->AddField<UIntValue>("ProcessId", 2700U);
@@ -2854,7 +2855,7 @@ TEST(EtwRawDecoderTest, ImageLoadV3) {
 TEST(EtwRawDecoderTest, ImageKernelBaseV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kImageProviderId,
           kVersion2, kImageKernelBaseOpcode, k64bit,
@@ -2862,7 +2863,7 @@ TEST(EtwRawDecoderTest, ImageKernelBaseV2) {
           sizeof(kImageKernelBasePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("BaseAddress", 18446735277664866304ULL);
 
   EXPECT_STREQ("Image", category.c_str());
@@ -2874,7 +2875,7 @@ TEST(EtwRawDecoderTest, ImageKernelBaseV2) {
 TEST(EtwRawDecoderTest, ProcessStart32bitsV1) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
 
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
@@ -2889,7 +2890,7 @@ TEST(EtwRawDecoderTest, ProcessStart32bitsV1) {
     0x68, 0xFD, 0x31, 0x06, 0xF1, 0xDC, 0xA4, 0xD3,
     0xE8, 0x03, 0x00, 0x00 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("PageDirectoryBase", 0);
   expected->AddField<UIntValue>("ProcessId", 1776);
   expected->AddField<UIntValue>("ParentId", 988);
@@ -2898,7 +2899,7 @@ TEST(EtwRawDecoderTest, ProcessStart32bitsV1) {
   expected->AddField("UserSID", MakeSID32(0,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
   const std::string kFilename = "notepad.exe";
   expected->AddField<StringValue>("ImageFileName", kFilename);
 
@@ -2910,7 +2911,7 @@ TEST(EtwRawDecoderTest, ProcessStart32bitsV1) {
 TEST(EtwRawDecoderTest, ProcessStart32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
 
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
@@ -2925,7 +2926,7 @@ TEST(EtwRawDecoderTest, ProcessStart32bitsV2) {
     0x68, 0xFD, 0x31, 0x06, 0xF1, 0xDC, 0xA4, 0xD3,
     0xE8, 0x03, 0x00, 0x00 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("UniqueProcessKey", 0);
   expected->AddField<UIntValue>("ProcessId", 1776);
   expected->AddField<UIntValue>("ParentId", 988);
@@ -2934,7 +2935,7 @@ TEST(EtwRawDecoderTest, ProcessStart32bitsV2) {
   expected->AddField("UserSID", MakeSID32(0,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
   const std::string kFilename = "notepad.exe";
   expected->AddField<StringValue>("ImageFileName", kFilename);
   const std::wstring kCommandLine = L"\"C:\\Windows\\system32\\notepad.exe\" ";
@@ -2948,7 +2949,7 @@ TEST(EtwRawDecoderTest, ProcessStart32bitsV2) {
 TEST(EtwRawDecoderTest, ProcessStart32bitsV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
 
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
@@ -2963,7 +2964,7 @@ TEST(EtwRawDecoderTest, ProcessStart32bitsV3) {
     0x68, 0xFD, 0x31, 0x06, 0xF1, 0xDC, 0xA4, 0xD3,
     0xE8, 0x03, 0x00, 0x00 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("UniqueProcessKey", 0);
   expected->AddField<UIntValue>("ProcessId", 1776);
   expected->AddField<UIntValue>("ParentId", 988);
@@ -2973,7 +2974,7 @@ TEST(EtwRawDecoderTest, ProcessStart32bitsV3) {
   expected->AddField("UserSID", MakeSID32(0,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
   const std::string kFilename = "notepad.exe";
   expected->AddField<StringValue>("ImageFileName", kFilename);
   const std::wstring kCommandLine = L"\"C:\\Windows\\system32\\notepad.exe\" ";
@@ -2987,7 +2988,7 @@ TEST(EtwRawDecoderTest, ProcessStart32bitsV3) {
 TEST(EtwRawDecoderTest, ProcessStartV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
 
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
@@ -3002,7 +3003,7 @@ TEST(EtwRawDecoderTest, ProcessStartV2) {
     0x68, 0xFD, 0x31, 0x06, 0xF1, 0xDC, 0xA4, 0xD3,
     0xE8, 0x03, 0x00, 0x00 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("UniqueProcessKey", 0);
   expected->AddField<UIntValue>("ProcessId", 1776);
   expected->AddField<UIntValue>("ParentId", 988);
@@ -3011,7 +3012,7 @@ TEST(EtwRawDecoderTest, ProcessStartV2) {
   expected->AddField("UserSID", MakeSID64(0,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
   const std::string kFilename = "notepad.exe";
   expected->AddField<StringValue>("ImageFileName", kFilename);
   const std::wstring kCommandLine = L"\"C:\\Windows\\system32\\notepad.exe\" ";
@@ -3025,7 +3026,7 @@ TEST(EtwRawDecoderTest, ProcessStartV2) {
 TEST(EtwRawDecoderTest, ProcessStartV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
 
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
@@ -3037,7 +3038,7 @@ TEST(EtwRawDecoderTest, ProcessStartV3) {
   const unsigned char sid[] = { 1, 5, 0, 0, 0, 0, 0, 5, 21, 0, 0, 0, 2, 3,
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0, 0 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("UniqueProcessKey", 18446738026653712480ULL);
   expected->AddField<UIntValue>("ProcessId", 6656);
   expected->AddField<UIntValue>("ParentId", 7328);
@@ -3047,7 +3048,7 @@ TEST(EtwRawDecoderTest, ProcessStartV3) {
   expected->AddField("UserSID", MakeSID64(18446735965169079856ULL,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
   const std::string filename = "xperf.exe";
   expected->AddField<StringValue>("ImageFileName", filename);
   const std::wstring commandline = L"xperf  -d out.etl";
@@ -3061,7 +3062,7 @@ TEST(EtwRawDecoderTest, ProcessStartV3) {
 TEST(EtwRawDecoderTest, ProcessStartV4) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
           kVersion4, kProcessStartOpcode, k64bit,
@@ -3075,7 +3076,7 @@ TEST(EtwRawDecoderTest, ProcessStartV4) {
       0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x06,
       0xE9, 0x03, 0x00, 0x00 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("UniqueProcessKey", 18446708889790201984ULL);
   expected->AddField<UIntValue>("ProcessId", 2700U);
   expected->AddField<UIntValue>("ParentId", 5896U);
@@ -3086,7 +3087,7 @@ TEST(EtwRawDecoderTest, ProcessStartV4) {
   expected->AddField("UserSID", MakeSID64(18446673705038246032ULL,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
 
   expected->AddField<StringValue>("ImageFileName", "xperf.exe");
   expected->AddField<WStringValue>("CommandLine", L"xperf  -stop");
@@ -3101,7 +3102,7 @@ TEST(EtwRawDecoderTest, ProcessStartV4) {
 TEST(EtwRawDecoderTest, ProcessEndV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
 
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
@@ -3113,7 +3114,7 @@ TEST(EtwRawDecoderTest, ProcessEndV3) {
   const unsigned char sid[] = { 1, 5, 0, 0, 0, 0, 0, 5, 21, 0, 0, 0, 1, 2, 3,
       4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 3, 0, 0 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("UniqueProcessKey", 18446738026653712480ULL);
   expected->AddField<UIntValue>("ProcessId", 8236ULL);
   expected->AddField<UIntValue>("ParentId", 7328U);
@@ -3123,7 +3124,7 @@ TEST(EtwRawDecoderTest, ProcessEndV3) {
   expected->AddField("UserSID", MakeSID64(18446735965099372992ULL,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
   const std::string kFilename = "xperf.exe";
   expected->AddField<StringValue>("ImageFileName", kFilename);
   const std::wstring kCommandLine =
@@ -3138,7 +3139,7 @@ TEST(EtwRawDecoderTest, ProcessEndV3) {
 TEST(EtwRawDecoderTest, ProcessEndV4) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
           kVersion4, kProcessEndOpcode, k64bit,
@@ -3152,7 +3153,7 @@ TEST(EtwRawDecoderTest, ProcessEndV4) {
       0x13, 0x42, 0x24, 0x33, 0xCC, 0xCA, 0xCC, 0xCB,
       0xBA, 0xBE, 0x00, 0x00 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("UniqueProcessKey", 18446708889790201984ULL);
   expected->AddField<UIntValue>("ProcessId", 2040U);
   expected->AddField<UIntValue>("ParentId", 5896U);
@@ -3163,7 +3164,7 @@ TEST(EtwRawDecoderTest, ProcessEndV4) {
   expected->AddField("UserSID", MakeSID64(18446673705334261920ULL,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
 
   expected->AddField<StringValue>("ImageFileName", "xperf.exe");
   expected->AddField<WStringValue>("CommandLine",
@@ -3183,7 +3184,7 @@ TEST(EtwRawDecoderTest, ProcessEndV4) {
 TEST(EtwRawDecoderTest, ProcessDCStartV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
 
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
@@ -3194,7 +3195,7 @@ TEST(EtwRawDecoderTest, ProcessDCStartV3) {
 
   const unsigned char sid[] = { 1, 1, 0, 0, 0, 0, 0, 5, 16, 0, 0, 0 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("UniqueProcessKey",  18446735277666959744ULL);
   expected->AddField<UIntValue>("ProcessId", 0);
   expected->AddField<UIntValue>("ParentId", 0U);
@@ -3204,7 +3205,7 @@ TEST(EtwRawDecoderTest, ProcessDCStartV3) {
   expected->AddField("UserSID", MakeSID64(18446735965522384448ULL,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
   const std::string kFilename = "Idle";
   expected->AddField<StringValue>("ImageFileName", kFilename);
   const std::wstring kCommandLine = L"";
@@ -3218,7 +3219,7 @@ TEST(EtwRawDecoderTest, ProcessDCStartV3) {
 TEST(EtwRawDecoderTest, ProcessDCStartV4) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
 
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
@@ -3229,7 +3230,7 @@ TEST(EtwRawDecoderTest, ProcessDCStartV4) {
 
   const unsigned char sid[] = { 1, 1, 0, 0, 0, 0, 0, 5, 16, 0, 0, 0 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("UniqueProcessKey", 18446735279574963136ULL);
   expected->AddField<UIntValue>("ProcessId", 0U);
   expected->AddField<UIntValue>("ParentId", 0U);
@@ -3240,7 +3241,7 @@ TEST(EtwRawDecoderTest, ProcessDCStartV4) {
   expected->AddField("UserSID", MakeSID64(18446673705735535552ULL,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
   expected->AddField<StringValue>("ImageFileName", "Idle");
   expected->AddField<WStringValue>("CommandLine", L"");
   expected->AddField<WStringValue>("PackageFullName", L"");
@@ -3254,7 +3255,7 @@ TEST(EtwRawDecoderTest, ProcessDCStartV4) {
 TEST(EtwRawDecoderTest, ProcessDCEndV4) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
           kVersion4, kProcessDCEndOpcode, k64bit,
@@ -3266,7 +3267,7 @@ TEST(EtwRawDecoderTest, ProcessDCEndV4) {
       0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05,
       0x10, 0x00, 0x00, 0x00 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("UniqueProcessKey", 18446735279574963136ULL);
   expected->AddField<UIntValue>("ProcessId", 0U);
   expected->AddField<UIntValue>("ParentId", 0U);
@@ -3277,7 +3278,7 @@ TEST(EtwRawDecoderTest, ProcessDCEndV4) {
   expected->AddField("UserSID", MakeSID64(18446673705343288816ULL,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
   expected->AddField<StringValue>("ImageFileName", "Idle");
   expected->AddField<WStringValue>("CommandLine", L"");
   expected->AddField<WStringValue>("PackageFullName", L"");
@@ -3291,7 +3292,7 @@ TEST(EtwRawDecoderTest, ProcessDCEndV4) {
 TEST(EtwRawDecoderTest, ProcessTerminateV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
           kVersion2, kProcessTerminateOpcode, k64bit,
@@ -3299,7 +3300,7 @@ TEST(EtwRawDecoderTest, ProcessTerminateV2) {
           sizeof(kProcessTerminatePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 2040U);
 
   EXPECT_STREQ("Process", category.c_str());
@@ -3310,7 +3311,7 @@ TEST(EtwRawDecoderTest, ProcessTerminateV2) {
 TEST(EtwRawDecoderTest, ProcessPerfCtr32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
           kVersion2, kProcessPerfCtrOpcode, k32bit,
@@ -3318,7 +3319,7 @@ TEST(EtwRawDecoderTest, ProcessPerfCtr32bitsV2) {
           sizeof(kProcessPerfCtrPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 4804);
   expected->AddField<UIntValue>("PageFaultCount", 0U);
   expected->AddField<UIntValue>("HandleCount", 0U);
@@ -3343,7 +3344,7 @@ TEST(EtwRawDecoderTest, ProcessPerfCtr32bitsV2) {
 TEST(EtwRawDecoderTest, ProcessPerfCtrV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
           kVersion2, kProcessPerfCtrOpcode, k64bit,
@@ -3351,7 +3352,7 @@ TEST(EtwRawDecoderTest, ProcessPerfCtrV2) {
           sizeof(kProcessPerfCtrPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 2040U);
   expected->AddField<UIntValue>("PageFaultCount", 0U);
   expected->AddField<UIntValue>("HandleCount", 0U);
@@ -3376,7 +3377,7 @@ TEST(EtwRawDecoderTest, ProcessPerfCtrV2) {
 TEST(EtwRawDecoderTest, ProcessPerfCtrRundownV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
           kVersion2, kProcessPerfCtrRundownOpcode, k64bit,
@@ -3384,7 +3385,7 @@ TEST(EtwRawDecoderTest, ProcessPerfCtrRundownV2) {
           sizeof(kProcessPerfCtrRundownPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 0U);
   expected->AddField<UIntValue>("PageFaultCount", 1U);
   expected->AddField<UIntValue>("HandleCount", 1123U);
@@ -3409,7 +3410,7 @@ TEST(EtwRawDecoderTest, ProcessPerfCtrRundownV2) {
 TEST(EtwRawDecoderTest, ProcessDefunctV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
 
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
@@ -3425,7 +3426,7 @@ TEST(EtwRawDecoderTest, ProcessDefunctV2) {
       0xEC, 0x03, 0x00, 0x00
   };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("UniqueProcessKey", 18446738026664798208ULL);
   expected->AddField<UIntValue>("ProcessId", 1832);
   expected->AddField<UIntValue>("ParentId", 716);
@@ -3434,7 +3435,7 @@ TEST(EtwRawDecoderTest, ProcessDefunctV2) {
   expected->AddField("UserSID", MakeSID64(18446735827951636656ULL,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
   expected->AddField<StringValue>("ImageFileName", "cygrunsrv.exe");
   expected->AddField<WStringValue>("CommandLine", L"");
 
@@ -3446,7 +3447,7 @@ TEST(EtwRawDecoderTest, ProcessDefunctV2) {
 TEST(EtwRawDecoderTest, ProcessDefunctV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
 
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
@@ -3457,7 +3458,7 @@ TEST(EtwRawDecoderTest, ProcessDefunctV3) {
 
   const unsigned char sid[] = { 1, 1, 0, 0, 0, 0, 0, 5, 16, 0, 0, 0 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("UniqueProcessKey", 18446738026725302368ULL);
   expected->AddField<UIntValue>("ProcessId", 3684U);
   expected->AddField<UIntValue>("ParentId", 2196U);
@@ -3467,7 +3468,7 @@ TEST(EtwRawDecoderTest, ProcessDefunctV3) {
   expected->AddField("UserSID", MakeSID64(18446735964887549920ULL,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
   expected->AddField<StringValue>("ImageFileName", "cmd.exe");
   expected->AddField<WStringValue>("CommandLine", L"");
 
@@ -3479,7 +3480,7 @@ TEST(EtwRawDecoderTest, ProcessDefunctV3) {
 TEST(EtwRawDecoderTest, ProcessDefunctV5) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kProcessProviderId,
           kVersion5, kProcessDefunctOpcode, k64bit,
@@ -3493,7 +3494,7 @@ TEST(EtwRawDecoderTest, ProcessDefunctV5) {
       0xC4, 0xC5, 0xC6, 0xC7, 0xD0, 0xD1, 0xD2, 0xD3,
       0xD4, 0x03, 0x00, 0x00 };
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("UniqueProcessKey", 18446708889454036416ULL);
   expected->AddField<UIntValue>("ProcessId", 6472U);
   expected->AddField<UIntValue>("ParentId", 2064U);
@@ -3504,7 +3505,7 @@ TEST(EtwRawDecoderTest, ProcessDefunctV5) {
   expected->AddField("UserSID", MakeSID64(18446673705019631088ULL,
                                           0,
                                           &sid[0],
-                                          sizeof(sid)).Pass());
+                                          sizeof(sid)));
   expected->AddField<StringValue>("ImageFileName", "chrome.exe");
   expected->AddField<WStringValue>("CommandLine", L"");
   expected->AddField<WStringValue>("PackageFullName", L"");
@@ -3519,7 +3520,7 @@ TEST(EtwRawDecoderTest, ProcessDefunctV5) {
 TEST(EtwRawDecoderTest, PerfInfoSampleProf32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoSampleProfOpcode, k32bit,
@@ -3528,7 +3529,7 @@ TEST(EtwRawDecoderTest, PerfInfoSampleProf32bitsV2) {
           sizeof(kPerfInfoSampleProfPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("InstructionPointer", 0x82fc1a45);
   expected->AddField<UIntValue>("ThreadId", 3252);
   expected->AddField<UShortValue>("Count", 1);
@@ -3542,7 +3543,7 @@ TEST(EtwRawDecoderTest, PerfInfoSampleProf32bitsV2) {
 TEST(EtwRawDecoderTest, PerfInfoSampleProfV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoSampleProfOpcode, k64bit,
@@ -3550,7 +3551,7 @@ TEST(EtwRawDecoderTest, PerfInfoSampleProfV2) {
           sizeof(kPerfInfoSampleProfPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("InstructionPointer",
                                  18446735279571905355ULL);
   expected->AddField<UIntValue>("ThreadId", 8048U);
@@ -3565,7 +3566,7 @@ TEST(EtwRawDecoderTest, PerfInfoSampleProfV2) {
 TEST(EtwRawDecoderTest, PerfInfoISRMSI32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoISRMSIOpcode, k32bit,
@@ -3573,7 +3574,7 @@ TEST(EtwRawDecoderTest, PerfInfoISRMSI32bitsV2) {
           sizeof(kPerfInfoISRMSIPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("InitialTime", 0x000002AB91DE4FF8ULL);
   expected->AddField<UIntValue>("Routine", 0x8B8CA90E);
   expected->AddField<UCharValue>("ReturnValue", 1);
@@ -3589,7 +3590,7 @@ TEST(EtwRawDecoderTest, PerfInfoISRMSI32bitsV2) {
 TEST(EtwRawDecoderTest, PerfInfoISRMSIV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoISRMSIOpcode, k64bit,
@@ -3597,7 +3598,7 @@ TEST(EtwRawDecoderTest, PerfInfoISRMSIV2) {
           sizeof(kPerfInfoISRMSIPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("InitialTime", 4838955609579ULL);
   expected->AddField<ULongValue>("Routine", 18446735277626195488ULL);
   expected->AddField<UCharValue>("ReturnValue", 1);
@@ -3613,7 +3614,7 @@ TEST(EtwRawDecoderTest, PerfInfoISRMSIV2) {
 TEST(EtwRawDecoderTest, PerfInfoSysClEnter32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoSysClEnterOpcode, k32bit,
@@ -3622,7 +3623,7 @@ TEST(EtwRawDecoderTest, PerfInfoSysClEnter32bitsV2) {
           sizeof(kPerfInfoSysClEnterPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("SysCallAddress", 0x82A7874F);
 
   EXPECT_STREQ("PerfInfo", category.c_str());
@@ -3633,7 +3634,7 @@ TEST(EtwRawDecoderTest, PerfInfoSysClEnter32bitsV2) {
 TEST(EtwRawDecoderTest, PerfInfoSysClEnterV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoSysClEnterOpcode, k64bit,
@@ -3641,7 +3642,7 @@ TEST(EtwRawDecoderTest, PerfInfoSysClEnterV2) {
           sizeof(kPerfInfoSysClEnterPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("SysCallAddress", 18446735279572131108ULL);
 
   EXPECT_STREQ("PerfInfo", category.c_str());
@@ -3652,7 +3653,7 @@ TEST(EtwRawDecoderTest, PerfInfoSysClEnterV2) {
 TEST(EtwRawDecoderTest, PerfInfoSysClExit32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoSysClExitOpcode, k32bit,
@@ -3660,7 +3661,7 @@ TEST(EtwRawDecoderTest, PerfInfoSysClExit32bitsV2) {
           sizeof(kPerfInfoSysClExitPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("SysCallNtStatus", 0x103U);
 
   EXPECT_STREQ("PerfInfo", category.c_str());
@@ -3671,7 +3672,7 @@ TEST(EtwRawDecoderTest, PerfInfoSysClExit32bitsV2) {
 TEST(EtwRawDecoderTest, PerfInfoSysClExitV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoSysClExitOpcode, k64bit,
@@ -3679,7 +3680,7 @@ TEST(EtwRawDecoderTest, PerfInfoSysClExitV2) {
           sizeof(kPerfInfoSysClExitPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("SysCallNtStatus", 0U);
 
   EXPECT_STREQ("PerfInfo", category.c_str());
@@ -3690,7 +3691,7 @@ TEST(EtwRawDecoderTest, PerfInfoSysClExitV2) {
 TEST(EtwRawDecoderTest, PerfInfoISR32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoISROpcode, k32bit,
@@ -3698,7 +3699,7 @@ TEST(EtwRawDecoderTest, PerfInfoISR32bitsV2) {
           sizeof(kPerfInfoISRPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("InitialTime", 0x000002AB91B1C0D4);
   expected->AddField<UIntValue>("Routine", 0x94DCEF00);
   expected->AddField<UCharValue>("ReturnValue", 0);
@@ -3713,7 +3714,7 @@ TEST(EtwRawDecoderTest, PerfInfoISR32bitsV2) {
 TEST(EtwRawDecoderTest, PerfInfoDebuggerEnabledV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoDebuggerEnabledOpcode, k64bit,
@@ -3721,7 +3722,7 @@ TEST(EtwRawDecoderTest, PerfInfoDebuggerEnabledV2) {
           0,  // This payload is empty.
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
 
   EXPECT_STREQ("PerfInfo", category.c_str());
   EXPECT_STREQ("DebuggerEnabled", operation.c_str());
@@ -3731,7 +3732,7 @@ TEST(EtwRawDecoderTest, PerfInfoDebuggerEnabledV2) {
 TEST(EtwRawDecoderTest, PerfInfoDebuggerEnabledV2WithANullPayload) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoDebuggerEnabledOpcode, k64bit,
@@ -3739,7 +3740,7 @@ TEST(EtwRawDecoderTest, PerfInfoDebuggerEnabledV2WithANullPayload) {
           0,  // This payload is empty.
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
 
   EXPECT_STREQ("PerfInfo", category.c_str());
   EXPECT_STREQ("DebuggerEnabled", operation.c_str());
@@ -3749,7 +3750,7 @@ TEST(EtwRawDecoderTest, PerfInfoDebuggerEnabledV2WithANullPayload) {
 TEST(EtwRawDecoderTest, PerfInfoISRV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoISROpcode, k64bit,
@@ -3757,7 +3758,7 @@ TEST(EtwRawDecoderTest, PerfInfoISRV2) {
           sizeof(kPerfInfoISRPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("InitialTime", 4838956092844ULL);
   expected->AddField<ULongValue>("Routine", 18446735277666407872ULL);
   expected->AddField<UCharValue>("ReturnValue", 0);
@@ -3772,7 +3773,7 @@ TEST(EtwRawDecoderTest, PerfInfoISRV2) {
 TEST(EtwRawDecoderTest, PerfInfoThreadesDPC32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoThreadedDPCOpcode, k32bit,
@@ -3781,7 +3782,7 @@ TEST(EtwRawDecoderTest, PerfInfoThreadesDPC32bitsV2) {
           sizeof(kPerfInfoThreadedDPCPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("InitialTime", 0x000002AB91FD4D0A);
   expected->AddField<UIntValue>("Routine", 0x82837107);
 
@@ -3793,7 +3794,7 @@ TEST(EtwRawDecoderTest, PerfInfoThreadesDPC32bitsV2) {
 TEST(EtwRawDecoderTest, PerfInfoDPC32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoDPCOpcode, k32bit,
@@ -3801,7 +3802,7 @@ TEST(EtwRawDecoderTest, PerfInfoDPC32bitsV2) {
           sizeof(kPerfInfoDPCPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("InitialTime", 0x000002AB91B1C134);
   expected->AddField<UIntValue>("Routine", 0x900CEB1D);
 
@@ -3813,7 +3814,7 @@ TEST(EtwRawDecoderTest, PerfInfoDPC32bitsV2) {
 TEST(EtwRawDecoderTest, PerfInfoDPCV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoDPCOpcode, k64bit,
@@ -3821,7 +3822,7 @@ TEST(EtwRawDecoderTest, PerfInfoDPCV2) {
           sizeof(kPerfInfoDPCPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("InitialTime", 4838955609293ULL);
   expected->AddField<ULongValue>("Routine", 18446735279572565220ULL);
 
@@ -3833,7 +3834,7 @@ TEST(EtwRawDecoderTest, PerfInfoDPCV2) {
 TEST(EtwRawDecoderTest, PerfInfoTimerDPC32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoTimerDPCOpcode, k32bit,
@@ -3841,7 +3842,7 @@ TEST(EtwRawDecoderTest, PerfInfoTimerDPC32bitsV2) {
           sizeof(kPerfInfoTimerDPCPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("InitialTime", 0x000002AB91B13BC3);
   expected->AddField<UIntValue>("Routine", 0x93FE27B0);
 
@@ -3853,7 +3854,7 @@ TEST(EtwRawDecoderTest, PerfInfoTimerDPC32bitsV2) {
 TEST(EtwRawDecoderTest, PerfInfoTimerDPCV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoTimerDPCOpcode, k64bit,
@@ -3861,7 +3862,7 @@ TEST(EtwRawDecoderTest, PerfInfoTimerDPCV2) {
           sizeof(kPerfInfoTimerDPCPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("InitialTime", 0x00000466A83C2475);
   expected->AddField<ULongValue>("Routine", 0xFFFFF800031104D8);
 
@@ -3873,7 +3874,7 @@ TEST(EtwRawDecoderTest, PerfInfoTimerDPCV2) {
 TEST(EtwRawDecoderTest, PerfInfoCollectionStart32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoCollectionStartOpcode, k32bit,
@@ -3882,7 +3883,7 @@ TEST(EtwRawDecoderTest, PerfInfoCollectionStart32bitsV2) {
           sizeof(kPerfInfoCollectionStartPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("Source", 0U);
   expected->AddField<UIntValue>("NewInterval", 10000U);
   expected->AddField<UIntValue>("OldInterval", 10000U);
@@ -3895,7 +3896,7 @@ TEST(EtwRawDecoderTest, PerfInfoCollectionStart32bitsV2) {
 TEST(EtwRawDecoderTest, PerfInfoCollectionStartV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion3, kPerfInfoCollectionStartOpcode, k64bit,
@@ -3904,7 +3905,7 @@ TEST(EtwRawDecoderTest, PerfInfoCollectionStartV3) {
           sizeof(kPerfInfoCollectionStartPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("Source", 0U);
   expected->AddField<UIntValue>("NewInterval", 10000U);
   expected->AddField<UIntValue>("OldInterval", 10000U);
@@ -3918,7 +3919,7 @@ TEST(EtwRawDecoderTest, PerfInfoCollectionStartV3) {
 TEST(EtwRawDecoderTest, PerfInfoCollectionEnd32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion2, kPerfInfoCollectionEndOpcode, k32bit,
@@ -3927,7 +3928,7 @@ TEST(EtwRawDecoderTest, PerfInfoCollectionEnd32bitsV2) {
           sizeof(kPerfInfoCollectionEndPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("Source", 0U);
   expected->AddField<UIntValue>("NewInterval", 10000U);
   expected->AddField<UIntValue>("OldInterval", 10000U);
@@ -3940,7 +3941,7 @@ TEST(EtwRawDecoderTest, PerfInfoCollectionEnd32bitsV2) {
 TEST(EtwRawDecoderTest, PerfInfoCollectionEndV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion3, kPerfInfoCollectionEndOpcode, k64bit,
@@ -3948,7 +3949,7 @@ TEST(EtwRawDecoderTest, PerfInfoCollectionEndV3) {
           sizeof(kPerfInfoCollectionEndPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("Source", 0U);
   expected->AddField<UIntValue>("NewInterval", 10000U);
   expected->AddField<UIntValue>("OldInterval", 10000U);
@@ -3962,7 +3963,7 @@ TEST(EtwRawDecoderTest, PerfInfoCollectionEndV3) {
 TEST(EtwRawDecoderTest, PerfInfoCollectionStartSecondV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion3, kPerfInfoCollectionStartSecondOpcode, k64bit,
@@ -3971,7 +3972,7 @@ TEST(EtwRawDecoderTest, PerfInfoCollectionStartSecondV3) {
           sizeof(kPerfInfoCollectionStartSecondPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("SpinLockSpinThreshold", 1U);
   expected->AddField<UIntValue>("SpinLockContentionSampleRate", 1U);
   expected->AddField<UIntValue>("SpinLockAcquireSampleRate", 1000U);
@@ -3985,7 +3986,7 @@ TEST(EtwRawDecoderTest, PerfInfoCollectionStartSecondV3) {
 TEST(EtwRawDecoderTest, PerfInfoCollectionEndSecondV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPerfInfoProviderId,
           kVersion3, kPerfInfoCollectionEndSecondOpcode, k64bit,
@@ -3994,7 +3995,7 @@ TEST(EtwRawDecoderTest, PerfInfoCollectionEndSecondV3) {
           sizeof(kPerfInfoCollectionEndSecondPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("SpinLockSpinThreshold", 1U);
   expected->AddField<UIntValue>("SpinLockContentionSampleRate", 1U);
   expected->AddField<UIntValue>("SpinLockAcquireSampleRate", 1000U);
@@ -4008,7 +4009,7 @@ TEST(EtwRawDecoderTest, PerfInfoCollectionEndSecondV3) {
 TEST(EtwRawDecoderTest, ThreadStart32bitsV1) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion1, kThreadStartOpcode, k32bit,
@@ -4016,7 +4017,7 @@ TEST(EtwRawDecoderTest, ThreadStart32bitsV1) {
           sizeof(kThreadStartPayload32bitsV1),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 4);
   expected->AddField<UIntValue>("TThreadId", 1868);
   expected->AddField<UIntValue>("StackBase", 4088881152);
@@ -4035,7 +4036,7 @@ TEST(EtwRawDecoderTest, ThreadStart32bitsV1) {
 TEST(EtwRawDecoderTest, ThreadStart32bitsV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion3, kThreadStartOpcode, k32bit,
@@ -4043,7 +4044,7 @@ TEST(EtwRawDecoderTest, ThreadStart32bitsV3) {
           sizeof(kThreadStartPayload32bitsV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 556);
   expected->AddField<UIntValue>("TThreadId", 4908);
   expected->AddField<UIntValue>("StackBase", 0xb1985000);
@@ -4067,7 +4068,7 @@ TEST(EtwRawDecoderTest, ThreadStart32bitsV3) {
 TEST(EtwRawDecoderTest, ThreadStartV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion3, kThreadStartOpcode, k64bit,
@@ -4075,7 +4076,7 @@ TEST(EtwRawDecoderTest, ThreadStartV3) {
           sizeof(kThreadStartPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 8568U);
   expected->AddField<UIntValue>("TThreadId", 5268U);
   expected->AddField<ULongValue>("StackBase", 18446691297806659584ULL);
@@ -4099,7 +4100,7 @@ TEST(EtwRawDecoderTest, ThreadStartV3) {
 TEST(EtwRawDecoderTest, ThreadEnd32bitsV1) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion1, kThreadEndOpcode, k32bit,
@@ -4107,7 +4108,7 @@ TEST(EtwRawDecoderTest, ThreadEnd32bitsV1) {
           sizeof(kThreadEndPayload32bitsV1),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 0x00000004);
   expected->AddField<UIntValue>("TThreadId", 0x000000B4);
 
@@ -4119,7 +4120,7 @@ TEST(EtwRawDecoderTest, ThreadEnd32bitsV1) {
 TEST(EtwRawDecoderTest, ThreadEnd32bitsV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion3, kThreadEndOpcode, k32bit,
@@ -4127,7 +4128,7 @@ TEST(EtwRawDecoderTest, ThreadEnd32bitsV3) {
           sizeof(kThreadEndPayload32bitsV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 0x000012c4);
   expected->AddField<UIntValue>("TThreadId", 0x00001364);
   expected->AddField<UIntValue>("StackBase", 0xaa555000);
@@ -4151,7 +4152,7 @@ TEST(EtwRawDecoderTest, ThreadEnd32bitsV3) {
 TEST(EtwRawDecoderTest, ThreadEndV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion3, kThreadEndOpcode, k64bit,
@@ -4159,7 +4160,7 @@ TEST(EtwRawDecoderTest, ThreadEndV3) {
           sizeof(kThreadEndPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 2040U);
   expected->AddField<UIntValue>("TThreadId", 3288U);
   expected->AddField<ULongValue>("StackBase", 18446691297848487936ULL);
@@ -4183,7 +4184,7 @@ TEST(EtwRawDecoderTest, ThreadEndV3) {
 TEST(EtwRawDecoderTest, ThreadDCStartV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion2, kThreadDCStartOpcode, k64bit,
@@ -4191,7 +4192,7 @@ TEST(EtwRawDecoderTest, ThreadDCStartV2) {
           sizeof(kThreadDCStartPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 0U);
   expected->AddField<UIntValue>("TThreadId", 0U);
   expected->AddField<ULongValue>("StackBase", 18446735277666164736ULL);
@@ -4211,7 +4212,7 @@ TEST(EtwRawDecoderTest, ThreadDCStartV2) {
 TEST(EtwRawDecoderTest, ThreadDCStartV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion3, kThreadDCStartOpcode, k64bit,
@@ -4219,7 +4220,7 @@ TEST(EtwRawDecoderTest, ThreadDCStartV3) {
           sizeof(kThreadDCStartPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 0U);
   expected->AddField<UIntValue>("TThreadId", 0U);
   expected->AddField<ULongValue>("StackBase", 18446735279600988160ULL);
@@ -4243,7 +4244,7 @@ TEST(EtwRawDecoderTest, ThreadDCStartV3) {
 TEST(EtwRawDecoderTest, ThreadDCEndV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion3, kThreadDCEndOpcode, k64bit,
@@ -4251,7 +4252,7 @@ TEST(EtwRawDecoderTest, ThreadDCEndV3) {
           sizeof(kThreadDCEndPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ProcessId", 0U);
   expected->AddField<UIntValue>("TThreadId", 0U);
   expected->AddField<ULongValue>("StackBase", 18446735279600988160ULL);
@@ -4275,7 +4276,7 @@ TEST(EtwRawDecoderTest, ThreadDCEndV3) {
 TEST(EtwRawDecoderTest, ThreadCSwitch32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion2, kThreadCSwitchOpcode, k32bit,
@@ -4283,7 +4284,7 @@ TEST(EtwRawDecoderTest, ThreadCSwitch32bitsV2) {
           sizeof(kThreadCSwitchPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("NewThreadId", 0);
   expected->AddField<UIntValue>("OldThreadId", 4396);
   expected->AddField<CharValue>("NewThreadPriority", 0);
@@ -4305,7 +4306,7 @@ TEST(EtwRawDecoderTest, ThreadCSwitch32bitsV2) {
 TEST(EtwRawDecoderTest, ThreadCSwitchV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion2, kThreadCSwitchOpcode, k64bit,
@@ -4313,7 +4314,7 @@ TEST(EtwRawDecoderTest, ThreadCSwitchV2) {
           sizeof(kThreadCSwitchPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("NewThreadId", 2252U);
   expected->AddField<UIntValue>("OldThreadId", 0U);
   expected->AddField<CharValue>("NewThreadPriority", 8);
@@ -4335,7 +4336,7 @@ TEST(EtwRawDecoderTest, ThreadCSwitchV2) {
 TEST(EtwRawDecoderTest, ThreadSpinLockV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion2, kThreadSpinLockOpcode, k64bit,
@@ -4343,7 +4344,7 @@ TEST(EtwRawDecoderTest, ThreadSpinLockV2) {
           sizeof(kThreadSpinLockPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("SpinLockAddress", 18446708889382682976ULL);
   expected->AddField<ULongValue>("CallerAddress", 18446735279573042192ULL);
   expected->AddField<ULongValue>("AcquireTime", 2104105494612894ULL);
@@ -4356,10 +4357,10 @@ TEST(EtwRawDecoderTest, ThreadSpinLockV2) {
   expected->AddField<UCharValue>("AcquireDepth", 1);
   expected->AddField<UCharValue>("Flag", 0);
 
-  scoped_ptr<ArrayValue> reserved_array(new ArrayValue());
+  std::unique_ptr<ArrayValue> reserved_array(new ArrayValue());
   for (int i = 0; i < 5; ++i)
     reserved_array->Append<UCharValue>(0);
-  expected->AddField("Reserved", reserved_array.PassAs<Value>());
+  expected->AddField("Reserved", std::move(reserved_array));
 
   EXPECT_STREQ("Thread", category.c_str());
   EXPECT_STREQ("SpinLock", operation.c_str());
@@ -4369,7 +4370,7 @@ TEST(EtwRawDecoderTest, ThreadSpinLockV2) {
 TEST(EtwRawDecoderTest, ThreadSetPriorityV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion3, kThreadSetPriorityOpcode, k64bit,
@@ -4377,7 +4378,7 @@ TEST(EtwRawDecoderTest, ThreadSetPriorityV3) {
           sizeof(kThreadSetPriorityPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ThreadId", 544U);
   expected->AddField<UCharValue>("OldPriority", 15);
   expected->AddField<UCharValue>("NewPriority", 16);
@@ -4391,7 +4392,7 @@ TEST(EtwRawDecoderTest, ThreadSetPriorityV3) {
 TEST(EtwRawDecoderTest, ThreadSetBasePriorityV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion3, kThreadSetBasePriorityOpcode, k64bit,
@@ -4399,7 +4400,7 @@ TEST(EtwRawDecoderTest, ThreadSetBasePriorityV3) {
           sizeof(kThreadSetBasePriorityPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ThreadId", 6896U);
   expected->AddField<UCharValue>("OldPriority", 4);
   expected->AddField<UCharValue>("NewPriority", 7);
@@ -4413,7 +4414,7 @@ TEST(EtwRawDecoderTest, ThreadSetBasePriorityV3) {
 TEST(EtwRawDecoderTest, ThreadReadyThreadV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion2, kThreadReadyThreadOpcode, k64bit,
@@ -4421,7 +4422,7 @@ TEST(EtwRawDecoderTest, ThreadReadyThreadV2) {
           sizeof(kThreadReadyThreadPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("TThreadId", 2252U);
   expected->AddField<CharValue>("AdjustReason", 1);
   expected->AddField<CharValue>("AdjustIncrement", 0);
@@ -4436,7 +4437,7 @@ TEST(EtwRawDecoderTest, ThreadReadyThreadV2) {
 TEST(EtwRawDecoderTest, ThreadSetPagePriorityV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion3, kThreadSetPagePriorityOpcode, k64bit,
@@ -4444,7 +4445,7 @@ TEST(EtwRawDecoderTest, ThreadSetPagePriorityV3) {
           sizeof(kThreadSetPagePriorityPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ThreadId", 6764U);
   expected->AddField<UCharValue>("OldPriority", 5);
   expected->AddField<UCharValue>("NewPriority", 6);
@@ -4458,7 +4459,7 @@ TEST(EtwRawDecoderTest, ThreadSetPagePriorityV3) {
 TEST(EtwRawDecoderTest, ThreadSetIoPriorityV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion3, kThreadSetIoPriorityOpcode, k64bit,
@@ -4466,7 +4467,7 @@ TEST(EtwRawDecoderTest, ThreadSetIoPriorityV3) {
           sizeof(kThreadSetIoPriorityPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("ThreadId", 188U);
   expected->AddField<UCharValue>("OldPriority", 2);
   expected->AddField<UCharValue>("NewPriority", 0);
@@ -4480,7 +4481,7 @@ TEST(EtwRawDecoderTest, ThreadSetIoPriorityV3) {
 TEST(EtwRawDecoderTest, ThreadAutoBoostSetFloorV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion2, kThreadAutoBoostSetFloorOpcode, k64bit,
@@ -4488,7 +4489,7 @@ TEST(EtwRawDecoderTest, ThreadAutoBoostSetFloorV2) {
           sizeof(kThreadAutoBoostSetFloorPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Lock", 18446708889355637112ULL);
   expected->AddField<UIntValue>("ThreadId", 6896U);
   expected->AddField<UCharValue>("NewCpuPriorityFloor", 11);
@@ -4504,7 +4505,7 @@ TEST(EtwRawDecoderTest, ThreadAutoBoostSetFloorV2) {
 TEST(EtwRawDecoderTest, ThreadAutoBoostClearFloorV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion2, kThreadAutoBoostClearFloorOpcode, k64bit,
@@ -4513,7 +4514,7 @@ TEST(EtwRawDecoderTest, ThreadAutoBoostClearFloorV2) {
           sizeof(kThreadAutoBoostClearFloorPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("LockAddress", 18446708889355637112ULL);
   expected->AddField<UIntValue>("ThreadId", 6896U);
   expected->AddField<UShortValue>("BoostBitmap", 2048);
@@ -4527,7 +4528,7 @@ TEST(EtwRawDecoderTest, ThreadAutoBoostClearFloorV2) {
 TEST(EtwRawDecoderTest, ThreadAutoBoostEntryExhaustionV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kThreadProviderId,
           kVersion2, kThreadAutoBoostEntryExhaustionOpcode, k64bit,
@@ -4536,7 +4537,7 @@ TEST(EtwRawDecoderTest, ThreadAutoBoostEntryExhaustionV2) {
           sizeof(kThreadAutoBoostEntryExhaustionPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("LockAddress", 18446708889482441968ULL);
   expected->AddField<UIntValue>("ThreadId", 3004U);
 
@@ -4548,7 +4549,7 @@ TEST(EtwRawDecoderTest, ThreadAutoBoostEntryExhaustionV2) {
 TEST(EtwRawDecoderTest, TcplpSendIPV432bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kTcplpProviderId,
           kVersion2, kTcplpSendIPV4Opcode, k32bit,
@@ -4556,7 +4557,7 @@ TEST(EtwRawDecoderTest, TcplpSendIPV432bitsV2) {
           sizeof(kTcplpSendIPV4Payload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("PID", 3768);
   expected->AddField<UIntValue>("size", 516);
   expected->AddField<UIntValue>("daddr", 420152384);
@@ -4576,7 +4577,7 @@ TEST(EtwRawDecoderTest, TcplpSendIPV432bitsV2) {
 TEST(EtwRawDecoderTest, TcplpSendIPV4V2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kTcplpProviderId,
           kVersion2, kTcplpSendIPV4Opcode, k64bit,
@@ -4584,7 +4585,7 @@ TEST(EtwRawDecoderTest, TcplpSendIPV4V2) {
           sizeof(kTcplpSendIPV4PayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("PID", 8500U);
   expected->AddField<UIntValue>("size", 26U);
   expected->AddField<UIntValue>("daddr", 2U);
@@ -4604,7 +4605,7 @@ TEST(EtwRawDecoderTest, TcplpSendIPV4V2) {
 TEST(EtwRawDecoderTest, TcplpTCPCopyIPV4V2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kTcplpProviderId,
           kVersion2, kTcplpTCPCopyIPV4Opcode, k64bit,
@@ -4612,7 +4613,7 @@ TEST(EtwRawDecoderTest, TcplpTCPCopyIPV4V2) {
           sizeof(kTcplpTCPCopyIPV4PayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("PID", 6784U);
   expected->AddField<UIntValue>("size", 85U);
   expected->AddField<UIntValue>("daddr", 2U);
@@ -4630,7 +4631,7 @@ TEST(EtwRawDecoderTest, TcplpTCPCopyIPV4V2) {
 TEST(EtwRawDecoderTest, TcplpRecvIPV432bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kTcplpProviderId,
           kVersion2, kTcplpRecvIPV4Opcode, k32bit,
@@ -4638,7 +4639,7 @@ TEST(EtwRawDecoderTest, TcplpRecvIPV432bitsV2) {
           sizeof(kTcplpRecvIPV4Payload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("PID", 3768);
   expected->AddField<UIntValue>("size", 450);
   expected->AddField<UIntValue>("daddr", 420152384);
@@ -4656,7 +4657,7 @@ TEST(EtwRawDecoderTest, TcplpRecvIPV432bitsV2) {
 TEST(EtwRawDecoderTest, TcplpRecvIPV4V2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kTcplpProviderId,
           kVersion2, kTcplpRecvIPV4Opcode, k64bit,
@@ -4664,7 +4665,7 @@ TEST(EtwRawDecoderTest, TcplpRecvIPV4V2) {
           sizeof(kTcplpRecvIPV4PayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("PID", 6784U);
   expected->AddField<UIntValue>("size", 85U);
   expected->AddField<UIntValue>("daddr", 2U);
@@ -4682,7 +4683,7 @@ TEST(EtwRawDecoderTest, TcplpRecvIPV4V2) {
 TEST(EtwRawDecoderTest, TcplpConnectIPV432bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kTcplpProviderId,
           kVersion2, kTcplpConnectIPV4Opcode, k32bit,
@@ -4690,7 +4691,7 @@ TEST(EtwRawDecoderTest, TcplpConnectIPV432bitsV2) {
           sizeof(kTcplpConnectIPV4Payload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("PID", 3768);
   expected->AddField<UIntValue>("size", 0U);
   expected->AddField<UIntValue>("daddr", 353238403);
@@ -4715,7 +4716,7 @@ TEST(EtwRawDecoderTest, TcplpConnectIPV432bitsV2) {
 TEST(EtwRawDecoderTest, TcplpConnectIPV4V2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kTcplpProviderId,
           kVersion2, kTcplpConnectIPV4Opcode, k64bit,
@@ -4723,7 +4724,7 @@ TEST(EtwRawDecoderTest, TcplpConnectIPV4V2) {
           sizeof(kTcplpConnectIPV4PayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("PID", 6784U);
   expected->AddField<UIntValue>("size", 0U);
   expected->AddField<UIntValue>("daddr", 2U);
@@ -4748,7 +4749,7 @@ TEST(EtwRawDecoderTest, TcplpConnectIPV4V2) {
 TEST(EtwRawDecoderTest, TcplpDisconnectIPV4V2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kTcplpProviderId,
           kVersion2, kTcplpDisconnectIPV4Opcode, k64bit,
@@ -4756,7 +4757,7 @@ TEST(EtwRawDecoderTest, TcplpDisconnectIPV4V2) {
           sizeof(kTcplpDisconnectIPV4PayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("PID", 6784U);
   expected->AddField<UIntValue>("size", 0U);
   expected->AddField<UIntValue>("daddr", 2U);
@@ -4774,7 +4775,7 @@ TEST(EtwRawDecoderTest, TcplpDisconnectIPV4V2) {
 TEST(EtwRawDecoderTest, TcplpRetransmitIPV4V2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kTcplpProviderId,
           kVersion2, kTcplpRetransmitIPV4Opcode, k64bit,
@@ -4782,7 +4783,7 @@ TEST(EtwRawDecoderTest, TcplpRetransmitIPV4V2) {
           sizeof(kTcplpRetransmitIPV4PayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("PID", 6784U);
   expected->AddField<UIntValue>("size", 0U);
   expected->AddField<UIntValue>("daddr", 2U);
@@ -4800,7 +4801,7 @@ TEST(EtwRawDecoderTest, TcplpRetransmitIPV4V2) {
 TEST(EtwRawDecoderTest, RegistryCounters32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryCountersOpcode, k32bit,
@@ -4808,7 +4809,7 @@ TEST(EtwRawDecoderTest, RegistryCounters32bitsV2) {
           sizeof(kRegistryCountersPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Counter1", 3444ULL);
   expected->AddField<ULongValue>("Counter2", 1558ULL);
   expected->AddField<ULongValue>("Counter3", 343ULL);
@@ -4829,7 +4830,7 @@ TEST(EtwRawDecoderTest, RegistryCounters32bitsV2) {
 TEST(EtwRawDecoderTest, RegistryCountersV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryCountersOpcode, k64bit,
@@ -4837,7 +4838,7 @@ TEST(EtwRawDecoderTest, RegistryCountersV2) {
           sizeof(kRegistryCountersPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Counter1", 4774ULL);
   expected->AddField<ULongValue>("Counter2", 2043ULL);
   expected->AddField<ULongValue>("Counter3", 631ULL);
@@ -4858,7 +4859,7 @@ TEST(EtwRawDecoderTest, RegistryCountersV2) {
 TEST(EtwRawDecoderTest, RegistryCloseV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryCloseOpcode, k64bit,
@@ -4866,7 +4867,7 @@ TEST(EtwRawDecoderTest, RegistryCloseV2) {
           sizeof(kRegistryClosePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 1156575559766LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -4881,7 +4882,7 @@ TEST(EtwRawDecoderTest, RegistryCloseV2) {
 TEST(EtwRawDecoderTest, RegistryOpen32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryOpenOpcode, k32bit,
@@ -4889,7 +4890,7 @@ TEST(EtwRawDecoderTest, RegistryOpen32bitsV2) {
           sizeof(kRegistryOpenPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 2935907034356LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -4906,7 +4907,7 @@ TEST(EtwRawDecoderTest, RegistryOpen32bitsV2) {
 TEST(EtwRawDecoderTest, RegistryOpenV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryOpenOpcode, k64bit,
@@ -4914,7 +4915,7 @@ TEST(EtwRawDecoderTest, RegistryOpenV2) {
           sizeof(kRegistryOpenPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 1156575563809LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -4931,7 +4932,7 @@ TEST(EtwRawDecoderTest, RegistryOpenV2) {
 TEST(EtwRawDecoderTest, RegistryQueryValueV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryQueryValueOpcode, k64bit,
@@ -4939,7 +4940,7 @@ TEST(EtwRawDecoderTest, RegistryQueryValueV2) {
           sizeof(kRegistryQueryValuePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 1156575563864LL);
   expected->AddField<UIntValue>("Status", 3221225524U);
   expected->AddField<UIntValue>("Index", 2U);
@@ -4954,7 +4955,7 @@ TEST(EtwRawDecoderTest, RegistryQueryValueV2) {
 TEST(EtwRawDecoderTest, RegistryQueryV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryQueryOpcode, k64bit,
@@ -4962,7 +4963,7 @@ TEST(EtwRawDecoderTest, RegistryQueryV2) {
           sizeof(kRegistryQueryPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 1156576149040LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 7U);
@@ -4977,7 +4978,7 @@ TEST(EtwRawDecoderTest, RegistryQueryV2) {
 TEST(EtwRawDecoderTest, RegistryKCBDeleteV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryKCBDeleteOpcode, k64bit,
@@ -4985,7 +4986,7 @@ TEST(EtwRawDecoderTest, RegistryKCBDeleteV2) {
           sizeof(kRegistryKCBDeletePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 0LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -5003,7 +5004,7 @@ TEST(EtwRawDecoderTest, RegistryKCBDeleteV2) {
 TEST(EtwRawDecoderTest, RegistryKCBCreate32bitsV1) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion1, kRegistryKCBCreateOpcode, k32bit,
@@ -5011,7 +5012,7 @@ TEST(EtwRawDecoderTest, RegistryKCBCreate32bitsV1) {
           sizeof(kRegistryKCBCreatePayload32bitsV1),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("KeyHandle", 3814704792);
   expected->AddField<LongValue>("ElapsedTime", 0LL);
@@ -5028,7 +5029,7 @@ TEST(EtwRawDecoderTest, RegistryKCBCreate32bitsV1) {
 TEST(EtwRawDecoderTest, RegistryKCBCreateV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryKCBCreateOpcode, k64bit,
@@ -5036,7 +5037,7 @@ TEST(EtwRawDecoderTest, RegistryKCBCreateV2) {
           sizeof(kRegistryKCBCreatePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 0LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -5053,7 +5054,7 @@ TEST(EtwRawDecoderTest, RegistryKCBCreateV2) {
 TEST(EtwRawDecoderTest, RegistrySetInformationV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistrySetInformationOpcode, k64bit,
@@ -5061,7 +5062,7 @@ TEST(EtwRawDecoderTest, RegistrySetInformationV2) {
           sizeof(kRegistrySetInformationPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 1156576862229LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -5076,7 +5077,7 @@ TEST(EtwRawDecoderTest, RegistrySetInformationV2) {
 TEST(EtwRawDecoderTest, RegistryEnumerateValueKeyV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryEnumerateValueKeyOpcode, k64bit,
@@ -5085,7 +5086,7 @@ TEST(EtwRawDecoderTest, RegistryEnumerateValueKeyV2) {
           sizeof(kRegistryEnumerateValueKeyPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 1156576862359LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -5100,7 +5101,7 @@ TEST(EtwRawDecoderTest, RegistryEnumerateValueKeyV2) {
 TEST(EtwRawDecoderTest, RegistryEnumerateKeyV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryEnumerateKeyOpcode, k64bit,
@@ -5108,7 +5109,7 @@ TEST(EtwRawDecoderTest, RegistryEnumerateKeyV2) {
           sizeof(kRegistryEnumerateKeyPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 1156576863273LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -5123,7 +5124,7 @@ TEST(EtwRawDecoderTest, RegistryEnumerateKeyV2) {
 TEST(EtwRawDecoderTest, RegistrySetValue32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistrySetValueOpcode, k32bit,
@@ -5131,7 +5132,7 @@ TEST(EtwRawDecoderTest, RegistrySetValue32bitsV2) {
           sizeof(kRegistrySetValuePayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 2935917025169LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -5147,7 +5148,7 @@ TEST(EtwRawDecoderTest, RegistrySetValue32bitsV2) {
 TEST(EtwRawDecoderTest, RegistrySetValueV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistrySetValueOpcode, k64bit,
@@ -5155,7 +5156,7 @@ TEST(EtwRawDecoderTest, RegistrySetValueV2) {
           sizeof(kRegistrySetValuePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 1156580683338LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -5171,7 +5172,7 @@ TEST(EtwRawDecoderTest, RegistrySetValueV2) {
 TEST(EtwRawDecoderTest, RegistryCreate32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryCreateOpcode, k32bit,
@@ -5179,7 +5180,7 @@ TEST(EtwRawDecoderTest, RegistryCreate32bitsV2) {
           sizeof(kRegistryCreatePayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 2935928835756LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -5195,7 +5196,7 @@ TEST(EtwRawDecoderTest, RegistryCreate32bitsV2) {
 TEST(EtwRawDecoderTest, RegistryCreateV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryCreateOpcode, k64bit,
@@ -5203,7 +5204,7 @@ TEST(EtwRawDecoderTest, RegistryCreateV2) {
           sizeof(kRegistryCreatePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 1156580973646LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -5220,7 +5221,7 @@ TEST(EtwRawDecoderTest, RegistryCreateV2) {
 TEST(EtwRawDecoderTest, RegistryQuerySecurityV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryQuerySecurityOpcode, k64bit,
@@ -5228,7 +5229,7 @@ TEST(EtwRawDecoderTest, RegistryQuerySecurityV2) {
           sizeof(kRegistryQuerySecurityPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 1156608798503LL);
   expected->AddField<UIntValue>("Status", 3221225507U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -5243,7 +5244,7 @@ TEST(EtwRawDecoderTest, RegistryQuerySecurityV2) {
 TEST(EtwRawDecoderTest, RegistrySetSecurityV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistrySetSecurityOpcode, k64bit,
@@ -5251,7 +5252,7 @@ TEST(EtwRawDecoderTest, RegistrySetSecurityV2) {
           sizeof(kRegistrySetSecurityPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 1156608798701LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -5266,7 +5267,7 @@ TEST(EtwRawDecoderTest, RegistrySetSecurityV2) {
 TEST(EtwRawDecoderTest, RegistryKCBRundownEndV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryKCBRundownEndOpcode, k64bit,
@@ -5274,7 +5275,7 @@ TEST(EtwRawDecoderTest, RegistryKCBRundownEndV2) {
           sizeof(kRegistryKCBRundownEndPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<LongValue>("InitialTime", 0LL);
   expected->AddField<UIntValue>("Status", 0U);
   expected->AddField<UIntValue>("Index", 0U);
@@ -5289,7 +5290,7 @@ TEST(EtwRawDecoderTest, RegistryKCBRundownEndV2) {
 TEST(EtwRawDecoderTest, RegistryConfigV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kRegistryProviderId,
           kVersion2, kRegistryConfigOpcode, k64bit,
@@ -5297,7 +5298,7 @@ TEST(EtwRawDecoderTest, RegistryConfigV2) {
           sizeof(kRegistryConfigPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("CurrentControlSet", 1U);
 
   EXPECT_STREQ("Registry", category.c_str());
@@ -5308,7 +5309,7 @@ TEST(EtwRawDecoderTest, RegistryConfigV2) {
 TEST(EtwRawDecoderTest, FileIOFileCreate32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOFileCreateOpcode, k32bit,
@@ -5316,7 +5317,7 @@ TEST(EtwRawDecoderTest, FileIOFileCreate32bitsV2) {
           sizeof(kFileIOFileCreatePayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("FileObject", 2928799992U);
   expected->AddField<WStringValue>(
       "FileName",
@@ -5331,7 +5332,7 @@ TEST(EtwRawDecoderTest, FileIOFileCreate32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOFileCreateV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOFileCreateOpcode, k64bit,
@@ -5339,7 +5340,7 @@ TEST(EtwRawDecoderTest, FileIOFileCreateV2) {
           sizeof(kFileIOFileCreatePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("FileObject", 18446673705054964784ULL);
   expected->AddField<WStringValue>(
       "FileName",
@@ -5354,7 +5355,7 @@ TEST(EtwRawDecoderTest, FileIOFileCreateV2) {
 TEST(EtwRawDecoderTest, FileIOFileDelete32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOFileDeleteOpcode, k32bit,
@@ -5362,7 +5363,7 @@ TEST(EtwRawDecoderTest, FileIOFileDelete32bitsV2) {
           sizeof(kFileIOFileDeletePayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("FileObject", 2978713848U);
   expected->AddField<WStringValue>(
       "FileName",
@@ -5377,7 +5378,7 @@ TEST(EtwRawDecoderTest, FileIOFileDelete32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOFileDeleteV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOFileDeleteOpcode, k64bit,
@@ -5385,7 +5386,7 @@ TEST(EtwRawDecoderTest, FileIOFileDeleteV2) {
           sizeof(kFileIOFileDeletePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("FileObject", 18446673705333632048ULL);
   expected->AddField<WStringValue>(
       "FileName",
@@ -5401,7 +5402,7 @@ TEST(EtwRawDecoderTest, FileIOFileDeleteV2) {
 TEST(EtwRawDecoderTest, FileIOFileRundown32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOFileRundownOpcode, k32bit,
@@ -5409,7 +5410,7 @@ TEST(EtwRawDecoderTest, FileIOFileRundown32bitsV2) {
           sizeof(kFileIOFileRundownPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("FileObject", 2310563480U);
   expected->AddField<WStringValue>("FileName", L"Anonymized string. Dummy");
 
@@ -5421,7 +5422,7 @@ TEST(EtwRawDecoderTest, FileIOFileRundown32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOFileRundownV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOFileRundownOpcode, k64bit,
@@ -5429,7 +5430,7 @@ TEST(EtwRawDecoderTest, FileIOFileRundownV2) {
           sizeof(kFileIOFileRundownPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("FileObject", 18446673704981525952ULL);
   expected->AddField<WStringValue>("FileName", L"Anonymized string. Dummy");
 
@@ -5441,7 +5442,7 @@ TEST(EtwRawDecoderTest, FileIOFileRundownV2) {
 TEST(EtwRawDecoderTest, FileIOCreateV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOCreateOpcode, k64bit,
@@ -5449,7 +5450,7 @@ TEST(EtwRawDecoderTest, FileIOCreateV2) {
           sizeof(kFileIOCreatePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446738026435767392ULL);
   expected->AddField<ULongValue>("TTID", 1592ULL);
   expected->AddField<ULongValue>("FileObject", 18446738026464273584ULL);
@@ -5468,7 +5469,7 @@ TEST(EtwRawDecoderTest, FileIOCreateV2) {
 TEST(EtwRawDecoderTest, FileIOCreate32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOCreateOpcode, k32bit,
@@ -5476,7 +5477,7 @@ TEST(EtwRawDecoderTest, FileIOCreate32bitsV2) {
           sizeof(kFileIOCreatePayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("IrpPtr", 2229521984U);
   expected->AddField<UIntValue>("TTID", 2612U);
   expected->AddField<UIntValue>("FileObject", 2228830616U);
@@ -5495,7 +5496,7 @@ TEST(EtwRawDecoderTest, FileIOCreate32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOCreateV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIOCreateOpcode, k64bit,
@@ -5503,7 +5504,7 @@ TEST(EtwRawDecoderTest, FileIOCreateV3) {
           sizeof(kFileIOCreatePayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889463167384ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889421029152ULL);
   expected->AddField<UIntValue>("TTID", 6592U);
@@ -5523,7 +5524,7 @@ TEST(EtwRawDecoderTest, FileIOCreateV3) {
 TEST(EtwRawDecoderTest, FileIOCleanupV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOCleanupOpcode, k64bit,
@@ -5531,7 +5532,7 @@ TEST(EtwRawDecoderTest, FileIOCleanupV2) {
           sizeof(kFileIOCleanupPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446738026421882464ULL);
   expected->AddField<ULongValue>("TTID", 2844ULL);
   expected->AddField<ULongValue>("FileObject", 18446738026463889744ULL);
@@ -5545,7 +5546,7 @@ TEST(EtwRawDecoderTest, FileIOCleanupV2) {
 TEST(EtwRawDecoderTest, FileIOCleanup32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOCleanupOpcode, k32bit,
@@ -5553,7 +5554,7 @@ TEST(EtwRawDecoderTest, FileIOCleanup32bitsV2) {
           sizeof(kFileIOCleanupPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("IrpPtr", 2229521984U);
   expected->AddField<UIntValue>("TTID", 2612U);
   expected->AddField<UIntValue>("FileObject", 2228830616U);
@@ -5567,7 +5568,7 @@ TEST(EtwRawDecoderTest, FileIOCleanup32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOCleanupV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIOCleanupOpcode, k64bit,
@@ -5575,7 +5576,7 @@ TEST(EtwRawDecoderTest, FileIOCleanupV3) {
           sizeof(kFileIOCleanupPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889441474104ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889468267536ULL);
   expected->AddField<ULongValue>("FileKey", 18446673704999469856ULL);
@@ -5589,7 +5590,7 @@ TEST(EtwRawDecoderTest, FileIOCleanupV3) {
 TEST(EtwRawDecoderTest, FileIOCloseV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOCloseOpcode, k64bit,
@@ -5597,7 +5598,7 @@ TEST(EtwRawDecoderTest, FileIOCloseV2) {
           sizeof(kFileIOClosePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446738026421882464ULL);
   expected->AddField<ULongValue>("TTID", 2844ULL);
   expected->AddField<ULongValue>("FileObject", 18446738026463889744ULL);
@@ -5611,7 +5612,7 @@ TEST(EtwRawDecoderTest, FileIOCloseV2) {
 TEST(EtwRawDecoderTest, FileIOClose32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOCloseOpcode, k32bit,
@@ -5619,7 +5620,7 @@ TEST(EtwRawDecoderTest, FileIOClose32bitsV2) {
           sizeof(kFileIOClosePayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("IrpPtr", 2229521984U);
   expected->AddField<UIntValue>("TTID", 2612U);
   expected->AddField<UIntValue>("FileObject", 2228830616U);
@@ -5633,7 +5634,7 @@ TEST(EtwRawDecoderTest, FileIOClose32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOCloseV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIOCloseOpcode, k64bit,
@@ -5641,7 +5642,7 @@ TEST(EtwRawDecoderTest, FileIOCloseV3) {
           sizeof(kFileIOClosePayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889441474104ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889468267536ULL);
   expected->AddField<ULongValue>("FileKey", 18446673704999469856ULL);
@@ -5655,7 +5656,7 @@ TEST(EtwRawDecoderTest, FileIOCloseV3) {
 TEST(EtwRawDecoderTest, FileIOReadV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOReadOpcode, k64bit,
@@ -5663,7 +5664,7 @@ TEST(EtwRawDecoderTest, FileIOReadV2) {
           sizeof(kFileIOReadPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Offset", 258ULL);
   expected->AddField<ULongValue>("IrpPtr", 18446738026430539952ULL);
   expected->AddField<ULongValue>("TTID", 3580ULL);
@@ -5680,7 +5681,7 @@ TEST(EtwRawDecoderTest, FileIOReadV2) {
 TEST(EtwRawDecoderTest, FileIORead32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOReadOpcode, k32bit,
@@ -5688,7 +5689,7 @@ TEST(EtwRawDecoderTest, FileIORead32bitsV2) {
           sizeof(kFileIOReadPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Offset", 9984ULL);
   expected->AddField<UIntValue>("IrpPtr", 2228365648U);
   expected->AddField<UIntValue>("TTID", 2924U);
@@ -5705,7 +5706,7 @@ TEST(EtwRawDecoderTest, FileIORead32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOReadV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIOReadOpcode, k64bit,
@@ -5713,7 +5714,7 @@ TEST(EtwRawDecoderTest, FileIOReadV3) {
           sizeof(kFileIOReadPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Offset", 736ULL);
   expected->AddField<ULongValue>("IrpPtr", 18446708889463167384ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889421029152ULL);
@@ -5730,7 +5731,7 @@ TEST(EtwRawDecoderTest, FileIOReadV3) {
 TEST(EtwRawDecoderTest, FileIOWriteV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOWriteOpcode, k64bit,
@@ -5738,7 +5739,7 @@ TEST(EtwRawDecoderTest, FileIOWriteV2) {
           sizeof(kFileIOWritePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Offset", 0ULL);
   expected->AddField<ULongValue>("IrpPtr", 18446738026421882464ULL);
   expected->AddField<ULongValue>("TTID", 1592ULL);
@@ -5755,7 +5756,7 @@ TEST(EtwRawDecoderTest, FileIOWriteV2) {
 TEST(EtwRawDecoderTest, FileIOWrite32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOWriteOpcode, k32bit,
@@ -5763,7 +5764,7 @@ TEST(EtwRawDecoderTest, FileIOWrite32bitsV2) {
           sizeof(kFileIOWritePayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Offset", 225956ULL);
   expected->AddField<UIntValue>("IrpPtr", 2230303248U);
   expected->AddField<UIntValue>("TTID", 2924U);
@@ -5780,7 +5781,7 @@ TEST(EtwRawDecoderTest, FileIOWrite32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOWriteV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIOWriteOpcode, k64bit,
@@ -5788,7 +5789,7 @@ TEST(EtwRawDecoderTest, FileIOWriteV3) {
           sizeof(kFileIOWritePayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Offset", 0ULL);
   expected->AddField<ULongValue>("IrpPtr", 18446708889468543848ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889442318784ULL);
@@ -5805,7 +5806,7 @@ TEST(EtwRawDecoderTest, FileIOWriteV3) {
 TEST(EtwRawDecoderTest, FileIOSetInfoV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOSetInfoOpcode, k64bit,
@@ -5813,7 +5814,7 @@ TEST(EtwRawDecoderTest, FileIOSetInfoV2) {
           sizeof(kFileIOSetInfoPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446738026421882464ULL);
   expected->AddField<ULongValue>("TTID", 4676ULL);
   expected->AddField<ULongValue>("FileObject", 18446738026439430256ULL);
@@ -5829,7 +5830,7 @@ TEST(EtwRawDecoderTest, FileIOSetInfoV2) {
 TEST(EtwRawDecoderTest, FileIOSetInfo32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOSetInfoOpcode, k32bit,
@@ -5837,7 +5838,7 @@ TEST(EtwRawDecoderTest, FileIOSetInfo32bitsV2) {
           sizeof(kFileIOSetInfoPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("IrpPtr", 2229278008U);
   expected->AddField<UIntValue>("TTID", 716U);
   expected->AddField<UIntValue>("FileObject", 2245283192U);
@@ -5853,7 +5854,7 @@ TEST(EtwRawDecoderTest, FileIOSetInfo32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOSetInfoV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIOSetInfoOpcode, k64bit,
@@ -5861,7 +5862,7 @@ TEST(EtwRawDecoderTest, FileIOSetInfoV3) {
           sizeof(kFileIOSetInfoPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889351416760ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889444373312ULL);
   expected->AddField<ULongValue>("FileKey", 18446673705429320000ULL);
@@ -5877,7 +5878,7 @@ TEST(EtwRawDecoderTest, FileIOSetInfoV3) {
 TEST(EtwRawDecoderTest, FileIODeleteV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIODeleteOpcode, k64bit,
@@ -5885,7 +5886,7 @@ TEST(EtwRawDecoderTest, FileIODeleteV2) {
           sizeof(kFileIODeletePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446738026455966864ULL);
   expected->AddField<ULongValue>("TTID", 2524ULL);
   expected->AddField<ULongValue>("FileObject", 18446738026430805520ULL);
@@ -5901,7 +5902,7 @@ TEST(EtwRawDecoderTest, FileIODeleteV2) {
 TEST(EtwRawDecoderTest, FileIODelete32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIODeleteOpcode, k32bit,
@@ -5909,7 +5910,7 @@ TEST(EtwRawDecoderTest, FileIODelete32bitsV2) {
           sizeof(kFileIODeletePayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("IrpPtr", 2229278008U);
   expected->AddField<UIntValue>("TTID", 2924U);
   expected->AddField<UIntValue>("FileObject", 2245543696U);
@@ -5925,7 +5926,7 @@ TEST(EtwRawDecoderTest, FileIODelete32bitsV2) {
 TEST(EtwRawDecoderTest, FileIODeleteV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIODeleteOpcode, k64bit,
@@ -5933,7 +5934,7 @@ TEST(EtwRawDecoderTest, FileIODeleteV3) {
           sizeof(kFileIODeletePayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889352747960ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889505544320ULL);
   expected->AddField<ULongValue>("FileKey", 18446673705429320000ULL);
@@ -5949,7 +5950,7 @@ TEST(EtwRawDecoderTest, FileIODeleteV3) {
 TEST(EtwRawDecoderTest, FileIORenameV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIORenameOpcode, k64bit,
@@ -5957,7 +5958,7 @@ TEST(EtwRawDecoderTest, FileIORenameV2) {
           sizeof(kFileIORenamePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446738026435767392ULL);
   expected->AddField<ULongValue>("TTID", 404ULL);
   expected->AddField<ULongValue>("FileObject", 18446738026444779632ULL);
@@ -5973,7 +5974,7 @@ TEST(EtwRawDecoderTest, FileIORenameV2) {
 TEST(EtwRawDecoderTest, FileIORename32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIORenameOpcode, k32bit,
@@ -5981,7 +5982,7 @@ TEST(EtwRawDecoderTest, FileIORename32bitsV2) {
           sizeof(kFileIORenamePayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("IrpPtr", 2230303248U);
   expected->AddField<UIntValue>("TTID", 3092U);
   expected->AddField<UIntValue>("FileObject", 2273110328U);
@@ -5997,7 +5998,7 @@ TEST(EtwRawDecoderTest, FileIORename32bitsV2) {
 TEST(EtwRawDecoderTest, FileIORenameV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIORenameOpcode, k64bit,
@@ -6005,7 +6006,7 @@ TEST(EtwRawDecoderTest, FileIORenameV3) {
           sizeof(kFileIORenamePayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889463167384ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889442619504ULL);
   expected->AddField<ULongValue>("FileKey", 18446673705292653728ULL);
@@ -6021,7 +6022,7 @@ TEST(EtwRawDecoderTest, FileIORenameV3) {
 TEST(EtwRawDecoderTest, FileIODirEnumV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIODirEnumOpcode, k64bit,
@@ -6029,7 +6030,7 @@ TEST(EtwRawDecoderTest, FileIODirEnumV2) {
           sizeof(kFileIODirEnumPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446738026429591744ULL);
   expected->AddField<ULongValue>("TTID", 2112ULL);
   expected->AddField<ULongValue>("FileObject", 18446738026464819664ULL);
@@ -6047,7 +6048,7 @@ TEST(EtwRawDecoderTest, FileIODirEnumV2) {
 TEST(EtwRawDecoderTest, FileIODirEnum32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIODirEnumOpcode, k32bit,
@@ -6055,7 +6056,7 @@ TEST(EtwRawDecoderTest, FileIODirEnum32bitsV2) {
           sizeof(kFileIODirEnumPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("IrpPtr", 2228365648U);
   expected->AddField<UIntValue>("TTID", 2612U);
   expected->AddField<UIntValue>("FileObject", 2228830616U);
@@ -6075,7 +6076,7 @@ TEST(EtwRawDecoderTest, FileIODirEnum32bitsV2) {
 TEST(EtwRawDecoderTest, FileIODirEnumV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIODirEnumOpcode, k64bit,
@@ -6083,7 +6084,7 @@ TEST(EtwRawDecoderTest, FileIODirEnumV3) {
           sizeof(kFileIODirEnumPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889354247384ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889434820384ULL);
   expected->AddField<ULongValue>("FileKey", 18446673704981525952ULL);
@@ -6101,7 +6102,7 @@ TEST(EtwRawDecoderTest, FileIODirEnumV3) {
 TEST(EtwRawDecoderTest, FileIOFlushV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOFlushOpcode, k64bit,
@@ -6109,7 +6110,7 @@ TEST(EtwRawDecoderTest, FileIOFlushV2) {
           sizeof(kFileIOFlushPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446738026421882464ULL);
   expected->AddField<ULongValue>("TTID", 48ULL);
   expected->AddField<ULongValue>("FileObject", 18446738026421593136ULL);
@@ -6123,7 +6124,7 @@ TEST(EtwRawDecoderTest, FileIOFlushV2) {
 TEST(EtwRawDecoderTest, FileIOFlush32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOFlushOpcode, k32bit,
@@ -6131,7 +6132,7 @@ TEST(EtwRawDecoderTest, FileIOFlush32bitsV2) {
           sizeof(kFileIOFlushPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("IrpPtr", 2261535752U);
   expected->AddField<UIntValue>("TTID", 2856U);
   expected->AddField<UIntValue>("FileObject", 2229003904U);
@@ -6145,7 +6146,7 @@ TEST(EtwRawDecoderTest, FileIOFlush32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOFlushV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIOFlushOpcode, k64bit,
@@ -6153,7 +6154,7 @@ TEST(EtwRawDecoderTest, FileIOFlushV3) {
           sizeof(kFileIOFlushPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889351396104ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889348433504ULL);
   expected->AddField<ULongValue>("FileKey", 18446673705442971968ULL);
@@ -6167,7 +6168,7 @@ TEST(EtwRawDecoderTest, FileIOFlushV3) {
 TEST(EtwRawDecoderTest, FileIOQueryInfoV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOQueryInfoOpcode, k64bit,
@@ -6175,7 +6176,7 @@ TEST(EtwRawDecoderTest, FileIOQueryInfoV2) {
           sizeof(kFileIOQueryInfoPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446738026435767392ULL);
   expected->AddField<ULongValue>("TTID", 1592ULL);
   expected->AddField<ULongValue>("FileObject", 18446738026464273584ULL);
@@ -6191,7 +6192,7 @@ TEST(EtwRawDecoderTest, FileIOQueryInfoV2) {
 TEST(EtwRawDecoderTest, FileIOQueryInfo32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOQueryInfoOpcode, k32bit,
@@ -6199,7 +6200,7 @@ TEST(EtwRawDecoderTest, FileIOQueryInfo32bitsV2) {
           sizeof(kFileIOQueryInfoPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("IrpPtr", 2229521984U);
   expected->AddField<UIntValue>("TTID", 2612U);
   expected->AddField<UIntValue>("FileObject", 2228830616U);
@@ -6215,7 +6216,7 @@ TEST(EtwRawDecoderTest, FileIOQueryInfo32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOQueryInfoV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIOQueryInfoOpcode, k64bit,
@@ -6223,7 +6224,7 @@ TEST(EtwRawDecoderTest, FileIOQueryInfoV3) {
           sizeof(kFileIOQueryInfoPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889441474104ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889382979552ULL);
   expected->AddField<ULongValue>("FileKey", 18446673704977933824ULL);
@@ -6239,7 +6240,7 @@ TEST(EtwRawDecoderTest, FileIOQueryInfoV3) {
 TEST(EtwRawDecoderTest, FileIOFSControlV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOFSControlOpcode, k64bit,
@@ -6247,7 +6248,7 @@ TEST(EtwRawDecoderTest, FileIOFSControlV2) {
           sizeof(kFileIOFSControlPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446738026429591744ULL);
   expected->AddField<ULongValue>("TTID", 2404ULL);
   expected->AddField<ULongValue>("FileObject", 18446738026458665072ULL);
@@ -6263,7 +6264,7 @@ TEST(EtwRawDecoderTest, FileIOFSControlV2) {
 TEST(EtwRawDecoderTest, FileIOFSControl32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOFSControlOpcode, k32bit,
@@ -6271,7 +6272,7 @@ TEST(EtwRawDecoderTest, FileIOFSControl32bitsV2) {
           sizeof(kFileIOFSControlPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("IrpPtr", 2229521984U);
   expected->AddField<UIntValue>("TTID", 3816U);
   expected->AddField<UIntValue>("FileObject", 2272674216U);
@@ -6287,7 +6288,7 @@ TEST(EtwRawDecoderTest, FileIOFSControl32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOFSControlV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIOFSControlOpcode, k64bit,
@@ -6295,7 +6296,7 @@ TEST(EtwRawDecoderTest, FileIOFSControlV3) {
           sizeof(kFileIOFSControlPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889356233944ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889414324000ULL);
   expected->AddField<ULongValue>("FileKey", 18446708889381955568ULL);
@@ -6311,7 +6312,7 @@ TEST(EtwRawDecoderTest, FileIOFSControlV3) {
 TEST(EtwRawDecoderTest, FileIOOperationEnd32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIOOperationEndOpcode, k32bit,
@@ -6319,7 +6320,7 @@ TEST(EtwRawDecoderTest, FileIOOperationEnd32bitsV2) {
           sizeof(kFileIOOperationEndPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("IrpPtr", 2228365648U);
   expected->AddField<UIntValue>("ExtraInfo", 224U);
   expected->AddField<UIntValue>("NtStatus", 0U);
@@ -6332,7 +6333,7 @@ TEST(EtwRawDecoderTest, FileIOOperationEnd32bitsV2) {
 TEST(EtwRawDecoderTest, FileIOOperationEndV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIOOperationEndOpcode, k64bit,
@@ -6340,7 +6341,7 @@ TEST(EtwRawDecoderTest, FileIOOperationEndV3) {
           sizeof(kFileIOOperationEndPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889441474104ULL);
   expected->AddField<ULongValue>("ExtraInfo", 58ULL);
   expected->AddField<UIntValue>("NtStatus", 0U);
@@ -6353,7 +6354,7 @@ TEST(EtwRawDecoderTest, FileIOOperationEndV3) {
 TEST(EtwRawDecoderTest, FileIODirNotifyV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIODirNotifyOpcode, k64bit,
@@ -6361,7 +6362,7 @@ TEST(EtwRawDecoderTest, FileIODirNotifyV2) {
           sizeof(kFileIODirNotifyPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446738026434152288ULL);
   expected->AddField<ULongValue>("TTID", 2112ULL);
   expected->AddField<ULongValue>("FileObject", 18446738026432933664ULL);
@@ -6379,7 +6380,7 @@ TEST(EtwRawDecoderTest, FileIODirNotifyV2) {
 TEST(EtwRawDecoderTest, FileIODirNotify32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion2, kFileIODirNotifyOpcode, k32bit,
@@ -6387,7 +6388,7 @@ TEST(EtwRawDecoderTest, FileIODirNotify32bitsV2) {
           sizeof(kFileIODirNotifyPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("IrpPtr", 2229757472U);
   expected->AddField<UIntValue>("TTID", 5528U);
   expected->AddField<UIntValue>("FileObject", 2230090792U);
@@ -6405,7 +6406,7 @@ TEST(EtwRawDecoderTest, FileIODirNotify32bitsV2) {
 TEST(EtwRawDecoderTest, FileIODirNotifyV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIODirNotifyOpcode, k64bit,
@@ -6413,7 +6414,7 @@ TEST(EtwRawDecoderTest, FileIODirNotifyV3) {
           sizeof(kFileIODirNotifyPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889360288168ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889436228640ULL);
   expected->AddField<ULongValue>("FileKey", 18446673705003707264ULL);
@@ -6431,7 +6432,7 @@ TEST(EtwRawDecoderTest, FileIODirNotifyV3) {
 TEST(EtwRawDecoderTest, FileIODletePathV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIODletePathOpcode, k64bit,
@@ -6439,7 +6440,7 @@ TEST(EtwRawDecoderTest, FileIODletePathV3) {
           sizeof(kFileIODletePathPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889352747960ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889505544320ULL);
   expected->AddField<ULongValue>("FileKey", 18446673705429320000ULL);
@@ -6458,7 +6459,7 @@ TEST(EtwRawDecoderTest, FileIODletePathV3) {
 TEST(EtwRawDecoderTest, FileIORenamePathV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kFileIOProviderId,
           kVersion3, kFileIORenamePathOpcode, k64bit,
@@ -6466,7 +6467,7 @@ TEST(EtwRawDecoderTest, FileIORenamePathV3) {
           sizeof(kFileIORenamePathPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("IrpPtr", 18446708889354247384ULL);
   expected->AddField<ULongValue>("FileObject", 18446708889420710640ULL);
   expected->AddField<ULongValue>("FileKey", 18446673705066228784ULL);
@@ -6487,7 +6488,7 @@ TEST(EtwRawDecoderTest, FileIORenamePathV3) {
 TEST(EtwRawDecoderTest, DiskIOReadV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kDiskIOProviderId,
           kVersion2, kDiskIOReadOpcode, k64bit,
@@ -6495,7 +6496,7 @@ TEST(EtwRawDecoderTest, DiskIOReadV2) {
           sizeof(kDiskIOReadPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("DiskNumber", 0U);
   expected->AddField<UIntValue>("IrpFlags", 393283U);
   expected->AddField<UIntValue>("TransferSize", 32768U);
@@ -6513,7 +6514,7 @@ TEST(EtwRawDecoderTest, DiskIOReadV2) {
 TEST(EtwRawDecoderTest, DiskIOReadV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kDiskIOProviderId,
           kVersion3, kDiskIOReadOpcode, k64bit,
@@ -6521,7 +6522,7 @@ TEST(EtwRawDecoderTest, DiskIOReadV3) {
           sizeof(kDiskIOReadPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("DiskNumber", 1U);
   expected->AddField<UIntValue>("IrpFlags", 393283U);
   expected->AddField<UIntValue>("TransferSize", 4096U);
@@ -6540,7 +6541,7 @@ TEST(EtwRawDecoderTest, DiskIOReadV3) {
 TEST(EtwRawDecoderTest, DiskIOWriteV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kDiskIOProviderId,
           kVersion2, kDiskIOWriteOpcode, k64bit,
@@ -6548,7 +6549,7 @@ TEST(EtwRawDecoderTest, DiskIOWriteV2) {
           sizeof(kDiskIOWritePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("DiskNumber", 0U);
   expected->AddField<UIntValue>("IrpFlags", 393283U);
   expected->AddField<UIntValue>("TransferSize", 12800U);
@@ -6566,7 +6567,7 @@ TEST(EtwRawDecoderTest, DiskIOWriteV2) {
 TEST(EtwRawDecoderTest, DiskIOWriteV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kDiskIOProviderId,
           kVersion3, kDiskIOWriteOpcode, k64bit,
@@ -6574,7 +6575,7 @@ TEST(EtwRawDecoderTest, DiskIOWriteV3) {
           sizeof(kDiskIOWritePayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("DiskNumber", 0U);
   expected->AddField<UIntValue>("IrpFlags", 393283U);
   expected->AddField<UIntValue>("TransferSize", 8192U);
@@ -6593,7 +6594,7 @@ TEST(EtwRawDecoderTest, DiskIOWriteV3) {
 TEST(EtwRawDecoderTest, DiskIOReadInitV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kDiskIOProviderId,
           kVersion2, kDiskIOReadInitOpcode, k64bit,
@@ -6601,7 +6602,7 @@ TEST(EtwRawDecoderTest, DiskIOReadInitV2) {
           sizeof(kDiskIOReadInitPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Irp", 18446738026433680656ULL);
 
   EXPECT_STREQ("DiskIO", category.c_str());
@@ -6612,7 +6613,7 @@ TEST(EtwRawDecoderTest, DiskIOReadInitV2) {
 TEST(EtwRawDecoderTest, DiskIOReadInitV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kDiskIOProviderId,
           kVersion3, kDiskIOReadInitOpcode, k64bit,
@@ -6620,7 +6621,7 @@ TEST(EtwRawDecoderTest, DiskIOReadInitV3) {
           sizeof(kDiskIOReadInitPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Irp", 18446708889436113680ULL);
   expected->AddField<UIntValue>("IssuingThreadId", 7056U);
 
@@ -6632,7 +6633,7 @@ TEST(EtwRawDecoderTest, DiskIOReadInitV3) {
 TEST(EtwRawDecoderTest, DiskIOWriteInitV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kDiskIOProviderId,
           kVersion2, kDiskIOWriteInitOpcode, k64bit,
@@ -6640,7 +6641,7 @@ TEST(EtwRawDecoderTest, DiskIOWriteInitV2) {
           sizeof(kDiskIOWriteInitPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Irp", 18446738026434317152ULL);
 
   EXPECT_STREQ("DiskIO", category.c_str());
@@ -6651,7 +6652,7 @@ TEST(EtwRawDecoderTest, DiskIOWriteInitV2) {
 TEST(EtwRawDecoderTest, DiskIOWriteInitV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kDiskIOProviderId,
           kVersion3, kDiskIOWriteInitOpcode, k64bit,
@@ -6659,7 +6660,7 @@ TEST(EtwRawDecoderTest, DiskIOWriteInitV3) {
           sizeof(kDiskIOWriteInitPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Irp", 18446708889462370320ULL);
   expected->AddField<UIntValue>("IssuingThreadId", 6896U);
 
@@ -6671,7 +6672,7 @@ TEST(EtwRawDecoderTest, DiskIOWriteInitV3) {
 TEST(EtwRawDecoderTest, DiskIOFlushBuffersV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kDiskIOProviderId,
           kVersion2, kDiskIOFlushBuffersOpcode, k64bit,
@@ -6679,7 +6680,7 @@ TEST(EtwRawDecoderTest, DiskIOFlushBuffersV2) {
           sizeof(kDiskIOFlushBuffersPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("DiskNumber", 0U);
   expected->AddField<UIntValue>("IrpFlags", 393216U);
   expected->AddField<ULongValue>("HighResResponseTime", 45238ULL);
@@ -6693,7 +6694,7 @@ TEST(EtwRawDecoderTest, DiskIOFlushBuffersV2) {
 TEST(EtwRawDecoderTest, DiskIOFlushBuffersV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kDiskIOProviderId,
           kVersion3, kDiskIOFlushBuffersOpcode, k64bit,
@@ -6701,7 +6702,7 @@ TEST(EtwRawDecoderTest, DiskIOFlushBuffersV3) {
           sizeof(kDiskIOFlushBuffersPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("DiskNumber", 0U);
   expected->AddField<UIntValue>("IrpFlags", 393216U);
   expected->AddField<ULongValue>("HighResResponseTime", 1881ULL);
@@ -6716,7 +6717,7 @@ TEST(EtwRawDecoderTest, DiskIOFlushBuffersV3) {
 TEST(EtwRawDecoderTest, DiskIOFlushInitV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kDiskIOProviderId,
           kVersion2, kDiskIOFlushInitOpcode, k64bit,
@@ -6724,7 +6725,7 @@ TEST(EtwRawDecoderTest, DiskIOFlushInitV2) {
           sizeof(kDiskIOFlushInitPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Irp", 18446738026432981120ULL);
 
   EXPECT_STREQ("DiskIO", category.c_str());
@@ -6735,7 +6736,7 @@ TEST(EtwRawDecoderTest, DiskIOFlushInitV2) {
 TEST(EtwRawDecoderTest, DiskIOFlushInitV3) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kDiskIOProviderId,
           kVersion3, kDiskIOFlushInitOpcode, k64bit,
@@ -6743,7 +6744,7 @@ TEST(EtwRawDecoderTest, DiskIOFlushInitV3) {
           sizeof(kDiskIOFlushInitPayloadV3),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("Irp", 18446708889460512592ULL);
   expected->AddField<UIntValue>("IssuingThreadId", 6896U);
 
@@ -6755,7 +6756,7 @@ TEST(EtwRawDecoderTest, DiskIOFlushInitV3) {
 TEST(EtwRawDecoderTest, StackWalkStackV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kStackWalkProviderId,
           kVersion2, kStackWalkStackOpcode, k64bit,
@@ -6763,12 +6764,12 @@ TEST(EtwRawDecoderTest, StackWalkStackV2) {
           sizeof(kStackWalkStackPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("EventTimeStamp", 1198356524732ULL);
   expected->AddField<UIntValue>("StackProcess", 7828U);
   expected->AddField<UIntValue>("StackThread", 1404U);
 
-  const uint64 kStackValues[] = {
+  const uint64_t kStackValues[] = {
       18446735285893805867ULL,
       140718042587290ULL,
       140718042589835ULL,
@@ -6791,10 +6792,10 @@ TEST(EtwRawDecoderTest, StackWalkStackV2) {
       140718065718733ULL,
       140718076806097ULL
   };
-  scoped_ptr<ArrayValue> stack(new ArrayValue());
+  std::unique_ptr<ArrayValue> stack(new ArrayValue());
   stack->AppendAll<ULongValue>(&kStackValues[0],
-                               sizeof(kStackValues) / sizeof(uint64));
-  expected->AddField("Stack", stack.PassAs<Value>());
+                               sizeof(kStackValues) / sizeof(uint64_t));
+  expected->AddField("Stack", std::move(stack));
 
   EXPECT_STREQ("StackWalk", category.c_str());
   EXPECT_STREQ("Stack", operation.c_str());
@@ -6804,7 +6805,7 @@ TEST(EtwRawDecoderTest, StackWalkStackV2) {
 TEST(EtwRawDecoderTest, PageFaultTransitionFault32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPageFaultProviderId,
           kVersion2, kPageFaultTransitionFaultOpcode, k32bit,
@@ -6813,7 +6814,7 @@ TEST(EtwRawDecoderTest, PageFaultTransitionFault32bitsV2) {
           sizeof(kPageFaultTransitionFaultPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("VirtualAddress", 0x77388E2D);
   expected->AddField<UIntValue>("ProgramCounter", 0x77388E2D);
 
@@ -6825,7 +6826,7 @@ TEST(EtwRawDecoderTest, PageFaultTransitionFault32bitsV2) {
 TEST(EtwRawDecoderTest, PageFaultTransitionFaultV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPageFaultProviderId,
           kVersion2, kPageFaultTransitionFaultOpcode, k64bit,
@@ -6833,7 +6834,7 @@ TEST(EtwRawDecoderTest, PageFaultTransitionFaultV2) {
           sizeof(kPageFaultTransitionFaultPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("VirtualAddress", 0x000007FEFDE62C26ULL);
   expected->AddField<ULongValue>("ProgramCounter", 0x000007FEFDE62C26ULL);
 
@@ -6845,7 +6846,7 @@ TEST(EtwRawDecoderTest, PageFaultTransitionFaultV2) {
 TEST(EtwRawDecoderTest, PageFaultDemandZeroFaultV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPageFaultProviderId,
           kVersion2, kPageFaultDemandZeroFaultOpcode, k64bit,
@@ -6853,7 +6854,7 @@ TEST(EtwRawDecoderTest, PageFaultDemandZeroFaultV2) {
           sizeof(kPageFaultDemandZeroFaultPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("VirtualAddress", 0x000007FFFFFAE020ULL);
   expected->AddField<ULongValue>("ProgramCounter", 0xFFFFF8000317FED6ULL);
 
@@ -6865,7 +6866,7 @@ TEST(EtwRawDecoderTest, PageFaultDemandZeroFaultV2) {
 TEST(EtwRawDecoderTest, PageFaultCopyOnWriteV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPageFaultProviderId,
           kVersion2, kPageFaultCopyOnWriteOpcode, k64bit,
@@ -6873,7 +6874,7 @@ TEST(EtwRawDecoderTest, PageFaultCopyOnWriteV2) {
           sizeof(kPageFaultCopyOnWritePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("VirtualAddress", 0x000007FEFDFFB228ULL);
   expected->AddField<ULongValue>("ProgramCounter", 0x00000000775D5469ULL);
 
@@ -6885,7 +6886,7 @@ TEST(EtwRawDecoderTest, PageFaultCopyOnWriteV2) {
 TEST(EtwRawDecoderTest, PageFaultAccessViolationV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPageFaultProviderId,
           kVersion2, kPageFaultAccessViolationOpcode, k64bit,
@@ -6893,7 +6894,7 @@ TEST(EtwRawDecoderTest, PageFaultAccessViolationV2) {
           sizeof(kPageFaultAccessViolationPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("VirtualAddress", 0x000007FFFFFF0000ULL);
   expected->AddField<ULongValue>("ProgramCounter", 0xFFFFF9600022CD8AULL);
 
@@ -6905,7 +6906,7 @@ TEST(EtwRawDecoderTest, PageFaultAccessViolationV2) {
 TEST(EtwRawDecoderTest, PageFaultHardPageFaultV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPageFaultProviderId,
           kVersion2, kPageFaultHardPageFaultOpcode, k64bit,
@@ -6913,7 +6914,7 @@ TEST(EtwRawDecoderTest, PageFaultHardPageFaultV2) {
           sizeof(kPageFaultHardPageFaultPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("VirtualAddress", 0xFFFFF9804966C000ULL);
   expected->AddField<ULongValue>("ProgramCounter", 0);
 
@@ -6925,7 +6926,7 @@ TEST(EtwRawDecoderTest, PageFaultHardPageFaultV2) {
 TEST(EtwRawDecoderTest, PageFaultHardFault32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPageFaultProviderId,
           kVersion2, kPageFaultHardFaultOpcode, k32bit,
@@ -6934,7 +6935,7 @@ TEST(EtwRawDecoderTest, PageFaultHardFault32bitsV2) {
           sizeof(kPageFaultHardFaultPayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("InitialTime", 0);
   expected->AddField<ULongValue>("ReadOffset", 0x00000000026b4000ULL);
   expected->AddField<UIntValue>("VirtualAddress", 0xa55b4000);
@@ -6950,7 +6951,7 @@ TEST(EtwRawDecoderTest, PageFaultHardFault32bitsV2) {
 TEST(EtwRawDecoderTest, PageFaultHardFaultV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPageFaultProviderId,
           kVersion2, kPageFaultHardFaultOpcode, k64bit,
@@ -6958,7 +6959,7 @@ TEST(EtwRawDecoderTest, PageFaultHardFaultV2) {
           sizeof(kPageFaultHardFaultPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("InitialTime", 107701904733ULL);
   expected->AddField<ULongValue>("ReadOffset", 150687744ULL);
   expected->AddField<ULongValue>("VirtualAddress", 408352ULL);
@@ -6974,7 +6975,7 @@ TEST(EtwRawDecoderTest, PageFaultHardFaultV2) {
 TEST(EtwRawDecoderTest, PageFaultVirtualAllocV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPageFaultProviderId,
           kVersion2, kPageFaultVirtualAllocOpcode, k64bit,
@@ -6982,7 +6983,7 @@ TEST(EtwRawDecoderTest, PageFaultVirtualAllocV2) {
           sizeof(kPageFaultVirtualAllocPayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("BaseAddress", 0x003B4000ULL);
   expected->AddField<ULongValue>("RegionSize", 0x6000ULL);
   expected->AddField<UIntValue>("ProcessId", 0x1804);
@@ -6996,7 +6997,7 @@ TEST(EtwRawDecoderTest, PageFaultVirtualAllocV2) {
 TEST(EtwRawDecoderTest, PageFaultVirtualFree32bitsV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPageFaultProviderId,
           kVersion2, kPageFaultVirtualFreeOpcode, k32bit,
@@ -7005,7 +7006,7 @@ TEST(EtwRawDecoderTest, PageFaultVirtualFree32bitsV2) {
           sizeof(kPageFaultVirtualFreePayload32bitsV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<UIntValue>("BaseAddress", 0x01420000);
   expected->AddField<UIntValue>("RegionSize", 0x00040000);
   expected->AddField<UIntValue>("ProcessId", 0x00000dd8);
@@ -7019,7 +7020,7 @@ TEST(EtwRawDecoderTest, PageFaultVirtualFree32bitsV2) {
 TEST(EtwRawDecoderTest, PageFaultVirtualFreeV2) {
   std::string operation;
   std::string category;
-  scoped_ptr<Value> fields;
+  std::unique_ptr<Value> fields;
   EXPECT_TRUE(
       DecodeRawETWKernelPayload(kPageFaultProviderId,
           kVersion2, kPageFaultVirtualFreeOpcode, k64bit,
@@ -7027,7 +7028,7 @@ TEST(EtwRawDecoderTest, PageFaultVirtualFreeV2) {
           sizeof(kPageFaultVirtualFreePayloadV2),
           &operation, &category, &fields));
 
-  scoped_ptr<StructValue> expected(new StructValue());
+  std::unique_ptr<StructValue> expected(new StructValue());
   expected->AddField<ULongValue>("BaseAddress", 0x003B4000ULL);
   expected->AddField<ULongValue>("RegionSize", 0x0000F000ULL);
   expected->AddField<UIntValue>("ProcessId", 0x1804);

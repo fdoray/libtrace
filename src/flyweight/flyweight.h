@@ -54,12 +54,12 @@
 #ifndef FLYWEIGHT_FLYWEIGHT_H_
 #define FLYWEIGHT_FLYWEIGHT_H_
 
+#include <memory>
 #include <utility>
 
 #include "base/base.h"
 #include "base/logging.h"
 #include "base/observer.h"
-#include "base/scoped_ptr.h"
 #include "flyweight/flyweight_key.h"
 
 namespace flyweight {
@@ -81,7 +81,7 @@ class Flyweight {
 
   // Constructs the flyweight using the provided implementation.
   // @param impl the implementation to which all queries will be redirected.
-  Flyweight(scoped_ptr<Impl> impl);
+  Flyweight(std::unique_ptr<Impl> impl);
 
   // Inserts a value in the flyweight if it's not already present and returns
   // a key to retrieve it.
@@ -108,7 +108,7 @@ class Flyweight {
 
  private:
   // Implentation to which all queries are redirected.
-  scoped_ptr<Impl> impl_;
+  std::unique_ptr<Impl> impl_;
 
   DISALLOW_COPY_AND_ASSIGN(Flyweight);
 };
@@ -132,7 +132,7 @@ class FlyweightImpl {
 };
 
 template <typename T, typename I>
-Flyweight<T, I>::Flyweight(scoped_ptr<Impl> impl) : impl_(impl.Pass()) {
+Flyweight<T, I>::Flyweight(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {
   DCHECK(impl_.get() != NULL);
 }
 

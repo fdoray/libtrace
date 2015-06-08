@@ -56,10 +56,10 @@ bool DecodeW16String(const std::string& name,
   DCHECK(decoder != NULL);
   DCHECK(fields != NULL);
 
-  scoped_ptr<WStringValue> decoded(decoder->DecodeW16String());
+  std::unique_ptr<WStringValue> decoded(decoder->DecodeW16String());
 
   if (decoded.get() == NULL ||
-      !fields->AddField(name, decoded.PassAs<Value>())) {
+      !fields->AddField(name, std::move(decoded))) {
     return false;
   }
 
@@ -73,10 +73,10 @@ bool DecodeFixedW16String(const std::string& name,
   DCHECK(decoder != NULL);
   DCHECK(fields != NULL);
 
-  scoped_ptr<WStringValue> decoded(decoder->DecodeFixedW16String(length));
+  std::unique_ptr<WStringValue> decoded(decoder->DecodeFixedW16String(length));
 
   if (decoded.get() == NULL ||
-      !fields->AddField(name, decoded.PassAs<Value>())) {
+      !fields->AddField(name, std::move(decoded))) {
     return false;
   }
 
@@ -92,7 +92,7 @@ bool DecodeSID(const std::string& name,
     return false;
 
   // Decode the TOKEN_USER structure.
-  scoped_ptr<StructValue> sid(new StructValue);
+  std::unique_ptr<StructValue> sid(new StructValue);
   if (!DecodeUInteger("PSid", is_64_bit, decoder, sid.get()) ||
       !Decode<UIntValue>("Attributes", decoder, sid.get())) {
     return false;
@@ -100,7 +100,7 @@ bool DecodeSID(const std::string& name,
 
   // Skip padding.
   if (is_64_bit) {
-    scoped_ptr<UIntValue> padding(decoder->Decode<UIntValue>());
+    std::unique_ptr<UIntValue> padding(decoder->Decode<UIntValue>());
     if (padding.get() == NULL)
       return false;
   }
@@ -118,14 +118,14 @@ bool DecodeSID(const std::string& name,
     return false;
 
   // Returns a struct containing all decoded fields.
-  return fields->AddField(name, sid.PassAs<Value>());
+  return fields->AddField(name, std::move(sid));
 }
 
 bool DecodeSystemTime(const std::string& name,
                       Decoder* decoder,
                       StructValue* fields) {
   // Decode the SystemTime structure.
-  scoped_ptr<StructValue> system_time(new StructValue);
+  std::unique_ptr<StructValue> system_time(new StructValue);
   if (!Decode<ShortValue>("wYear", decoder, system_time.get()) ||
       !Decode<ShortValue>("wMonth", decoder, system_time.get()) ||
       !Decode<ShortValue>("wDayOfWeek", decoder, system_time.get()) ||
@@ -138,7 +138,7 @@ bool DecodeSystemTime(const std::string& name,
   }
 
   // Returns a struct containing all decoded fields.
-  return fields->AddField(name, system_time.PassAs<Value>());
+  return fields->AddField(name, std::move(system_time));
 }
 
 bool DecodeTimeZoneInformation(const std::string& name,
@@ -146,7 +146,7 @@ bool DecodeTimeZoneInformation(const std::string& name,
                                StructValue* fields) {
 
   // Decode the TimeZone structure.
-  scoped_ptr<StructValue> timezone(new StructValue);
+  std::unique_ptr<StructValue> timezone(new StructValue);
   if (!Decode<IntValue>("Bias", decoder, timezone.get()) ||
       !DecodeFixedW16String("StandardName", 32, decoder, timezone.get()) ||
       !DecodeSystemTime("StandardDate", decoder, timezone.get()) ||
@@ -158,7 +158,7 @@ bool DecodeTimeZoneInformation(const std::string& name,
   }
 
   // Returns a struct containing all decoded fields.
-  return fields->AddField(name, timezone.PassAs<Value>());
+  return fields->AddField(name, std::move(timezone));
 }
 
 }  // namespace etw

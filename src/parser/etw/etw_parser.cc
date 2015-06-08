@@ -31,7 +31,6 @@
 #include <evntcons.h>  // NOLINT
 
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "base/string_utils.h"
 #include "event/event.h"
 #include "event/value.h"
@@ -83,7 +82,7 @@ bool DecodeRawETWPayload(const std::string& provider_id,
                          size_t payload_size,
                          std::string* operation,
                          std::string* category,
-                         scoped_ptr<event::Value>* decoded_payload) {
+                         std::unique_ptr<event::Value>* decoded_payload) {
   if (DecodeRawETWKernelPayload(
           provider_id, version, opcode, is_64_bit, payload, payload_size,
           operation, category, decoded_payload)) {
@@ -100,7 +99,7 @@ void WINAPI ProcessEvent(PEVENT_RECORD pevent) {
   std::string category;
 
   std::string provider_guid = GuidToString(pevent->EventHeader.ProviderId);
-  scoped_ptr<Value> payload;
+  std::unique_ptr<Value> payload;
   if (!DecodeRawETWPayload(
           provider_guid,
           pevent->EventHeader.EventDescriptor.Version,
@@ -115,18 +114,18 @@ void WINAPI ProcessEvent(PEVENT_RECORD pevent) {
   }
 
   // Generate the event header fields.
-  scoped_ptr<StructValue> fields(new StructValue());
+  std::unique_ptr<StructValue> fields(new StructValue());
   fields->AddField<StringValue>("operation", operation);
   fields->AddField<StringValue>("category", category);
   fields->AddField<ULongValue>("process_id", pevent->EventHeader.ProcessId);
   fields->AddField<ULongValue>("thread_id", pevent->EventHeader.ThreadId);
   fields->AddField<UCharValue>("processor_number",
                                pevent->BufferContext.ProcessorNumber);
-  fields->AddField("content", payload.Pass());
+  fields->AddField("content", std::move(payload));
 
   // Create the event with decoded fields.
   Event event(Timestamp(pevent->EventHeader.TimeStamp.QuadPart),
-              fields.Pass());
+              std::move(fields));
 
   // Send the event to the observer.
   event_observer->Receive(event);

@@ -50,7 +50,6 @@
 #include <string>
 
 #include "base/base.h"
-#include "base/scoped_ptr.h"
 #include "base/observer.h"
 #include "event/event.h"
 
@@ -72,7 +71,7 @@ class Parser {
 
   // Adds a new kind of parser to the list of parsers.
   // @param parser the parser to add.
-  void RegisterParser(scoped_ptr<ParserImpl> parser);
+  void RegisterParser(std::unique_ptr<ParserImpl> parser);
 
   // Adds a trace file to the list of traces to parse.
   // @param path absolute path to the trace file.

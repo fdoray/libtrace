@@ -25,7 +25,6 @@
 
 #include "flyweight/flyweight.h"
 
-#include "base/scoped_ptr.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -61,48 +60,48 @@ class MockFlyweightImpl : public FlyweightImpl<int> {
 }  // namespace
 
 TEST(FlyweightTest, Insert) {
-  scoped_ptr<MockFlyweightImpl> impl(new MockFlyweightImpl());
+  std::unique_ptr<MockFlyweightImpl> impl(new MockFlyweightImpl());
   EXPECT_CALL(*impl.get(), Insert(testing::_))
       .WillRepeatedly(testing::ReturnRefOfCopy(Key(1)));
 
-  TestedImpl flyweight(impl.PassAs<Impl>());
+  TestedImpl flyweight(std::move(impl));
   flyweight.Insert(42);
 }
 
 TEST(FlyweightTest, ValueOf) {
-  scoped_ptr<MockFlyweightImpl> impl(new MockFlyweightImpl());
+  std::unique_ptr<MockFlyweightImpl> impl(new MockFlyweightImpl());
   EXPECT_CALL(*impl.get(), ValueOf(testing::_))
       .WillRepeatedly(testing::ReturnRefOfCopy(1));
 
-  TestedImpl flyweight(impl.PassAs<Impl>());
+  TestedImpl flyweight(std::move(impl));
   Key key(42);
   flyweight.ValueOf(key);
 }
 
 TEST(FlyweightTest, Enumerate) {
   DummyObserver<KeyValuePair> observer;
-  scoped_ptr<MockFlyweightImpl> impl(new MockFlyweightImpl());
+  std::unique_ptr<MockFlyweightImpl> impl(new MockFlyweightImpl());
   EXPECT_CALL(*impl.get(), Enumerate(Ref(observer)));
 
-  TestedImpl flyweight(impl.PassAs<Impl>());
+  TestedImpl flyweight(std::move(impl));
   flyweight.Enumerate(observer);
 }
 
 TEST(FlyweightTest, EnumerateKeys) {
   DummyObserver<Key> observer;
-  scoped_ptr<MockFlyweightImpl> impl(new MockFlyweightImpl());
+  std::unique_ptr<MockFlyweightImpl> impl(new MockFlyweightImpl());
   EXPECT_CALL(*impl.get(), EnumerateKeys(Ref(observer)));
 
-  TestedImpl flyweight(impl.PassAs<Impl>());
+  TestedImpl flyweight(std::move(impl));
   flyweight.EnumerateKeys(observer);
 }
 
 TEST(FlyweightTest, EnumerateValues) {
   DummyObserver<int> observer;
-  scoped_ptr<MockFlyweightImpl> impl(new MockFlyweightImpl());
+  std::unique_ptr<MockFlyweightImpl> impl(new MockFlyweightImpl());
   EXPECT_CALL(*impl.get(), EnumerateValues(Ref(observer)));
 
-  TestedImpl flyweight(impl.PassAs<Impl>());
+  TestedImpl flyweight(std::move(impl));
   flyweight.EnumerateValues(observer);
 }
 

@@ -54,7 +54,7 @@ TEST(DecoderTest, Constructor) {
 
 TEST(DecoderTest, DecodeChar) {
   Decoder decoder(&kSmallBuffer[0], kSmallBufferLength);
-  scoped_ptr<CharValue> value(decoder.Decode<CharValue>());
+  std::unique_ptr<CharValue> value(decoder.Decode<CharValue>());
   EXPECT_EQ(event::VALUE_CHAR, value->GetType());
   EXPECT_EQ(0x01, CharValue::GetValue(value.get()));
   EXPECT_EQ(kSmallBufferLength - 1U, decoder.RemainingBytes());
@@ -62,7 +62,7 @@ TEST(DecoderTest, DecodeChar) {
 
 TEST(DecoderTest, DecodeInt) {
   Decoder decoder(&kSmallBuffer[0], kSmallBufferLength);
-  scoped_ptr<IntValue> value(decoder.Decode<IntValue>());
+  std::unique_ptr<IntValue> value(decoder.Decode<IntValue>());
   EXPECT_EQ(event::VALUE_INT, value->GetType());
   EXPECT_EQ(0x04030201, IntValue::GetValue(value.get()));
   EXPECT_EQ(kSmallBufferLength - 4U, decoder.RemainingBytes());
@@ -70,7 +70,7 @@ TEST(DecoderTest, DecodeInt) {
 
 TEST(DecoderTest, DecodeLong) {
   Decoder decoder(&kSmallBuffer[0], kSmallBufferLength);
-  scoped_ptr<LongValue> value(decoder.Decode<LongValue>());
+  std::unique_ptr<LongValue> value(decoder.Decode<LongValue>());
   EXPECT_EQ(event::VALUE_LONG, value->GetType());
   EXPECT_EQ(0x0807060504030201LL, LongValue::GetValue(value.get()));
   EXPECT_EQ(kSmallBufferLength - 8U, decoder.RemainingBytes());
@@ -78,19 +78,19 @@ TEST(DecoderTest, DecodeLong) {
 
 TEST(DecoderTest, DecodeEmptyFails) {
   Decoder decoder(&kSmallBuffer[0], 0);
-  scoped_ptr<IntValue> value(decoder.Decode<IntValue>());
+  std::unique_ptr<IntValue> value(decoder.Decode<IntValue>());
   EXPECT_EQ(NULL, value.get());
 }
 
 TEST(DecoderTest, DecodeTooSmallFails) {
   Decoder decoder(&kSmallBuffer[0], 2);
-  scoped_ptr<IntValue> value(decoder.Decode<IntValue>());
+  std::unique_ptr<IntValue> value(decoder.Decode<IntValue>());
   EXPECT_EQ(NULL, value.get());
 }
 
 TEST(DecoderTest, DecodeArrayChar) {
   Decoder decoder(&kSmallBuffer[0], kSmallBufferLength);
-  scoped_ptr<ArrayValue> value(decoder.DecodeArray<CharValue>(4));
+  std::unique_ptr<ArrayValue> value(decoder.DecodeArray<CharValue>(4));
   EXPECT_EQ(event::VALUE_ARRAY, value->GetType());
   EXPECT_EQ(4U, ArrayValue::Cast(value.get())->Length());
   EXPECT_EQ(kSmallBufferLength - 4U, decoder.RemainingBytes());
@@ -103,7 +103,7 @@ TEST(DecoderTest, DecodeArrayChar) {
 
 TEST(DecoderTest, DecodeEmptyArray) {
   Decoder decoder(&kSmallBuffer[0], kSmallBufferLength);
-  scoped_ptr<ArrayValue> value(decoder.DecodeArray<CharValue>(0));
+  std::unique_ptr<ArrayValue> value(decoder.DecodeArray<CharValue>(0));
   EXPECT_EQ(event::VALUE_ARRAY, value->GetType());
   EXPECT_EQ(0U, ArrayValue::Cast(value.get())->Length());
   EXPECT_EQ(kSmallBufferLength, decoder.RemainingBytes());
@@ -112,7 +112,7 @@ TEST(DecoderTest, DecodeEmptyArray) {
 TEST(DecoderTest, DecodeString) {
   const char original[] = "This is a test.";
   Decoder decoder(&original[0], sizeof(original) / sizeof(char));
-  scoped_ptr<StringValue> value(decoder.DecodeString());
+  std::unique_ptr<StringValue> value(decoder.DecodeString());
   EXPECT_EQ(event::VALUE_STRING, value->GetType());
   EXPECT_EQ(0U, decoder.RemainingBytes());
   EXPECT_STREQ(original, StringValue::GetValue(value.get()).c_str());
@@ -121,7 +121,7 @@ TEST(DecoderTest, DecodeString) {
 TEST(DecoderTest, DecodeStringTemplate) {
   const char original[] = "This is a test.";
   Decoder decoder(&original[0], sizeof(original) / sizeof(char));
-  scoped_ptr<StringValue> value(decoder.Decode<StringValue>());
+  std::unique_ptr<StringValue> value(decoder.Decode<StringValue>());
   EXPECT_EQ(event::VALUE_STRING, value->GetType());
   EXPECT_EQ(0U, decoder.RemainingBytes());
   EXPECT_STREQ(original, StringValue::GetValue(value.get()).c_str());
@@ -131,7 +131,7 @@ TEST(DecoderTest, DecodeWString) {
   const wchar_t original[] = L"This is a test.";
   Decoder decoder(reinterpret_cast<const char*>(&original[0]),
                   sizeof(original) / sizeof(char));
-  scoped_ptr<WStringValue> value(decoder.DecodeWString());
+  std::unique_ptr<WStringValue> value(decoder.DecodeWString());
   EXPECT_EQ(event::VALUE_WSTRING, value->GetType());
   EXPECT_EQ(0U, decoder.RemainingBytes());
   EXPECT_EQ(0, WStringValue::GetValue(value.get()).compare(original));
@@ -141,7 +141,7 @@ TEST(DecoderTest, DecodeWStringTemplate) {
   const wchar_t original[] = L"This is a test.";
   Decoder decoder(reinterpret_cast<const char*>(&original[0]),
                   sizeof(original) / sizeof(char));
-  scoped_ptr<WStringValue> value(decoder.Decode<WStringValue>());
+  std::unique_ptr<WStringValue> value(decoder.Decode<WStringValue>());
   EXPECT_EQ(event::VALUE_WSTRING, value->GetType());
   EXPECT_EQ(0U, decoder.RemainingBytes());
   EXPECT_EQ(0, WStringValue::GetValue(value.get()).compare(original));
@@ -151,7 +151,7 @@ TEST(DecoderTest, DecodeW16String) {
   const char original[] = "T\0h\0i\0s\0 \0i\0s\0 \0a\0 \0t\0e\0s\0t\0.\0\0";
   const wchar_t expected[] = L"This is a test.";
   Decoder decoder(&original[0], sizeof(original) / sizeof(char));
-  scoped_ptr<WStringValue> value(decoder.DecodeW16String());
+  std::unique_ptr<WStringValue> value(decoder.DecodeW16String());
   EXPECT_EQ(event::VALUE_WSTRING, value->GetType());
   EXPECT_EQ(0U, decoder.RemainingBytes());
   EXPECT_EQ(0, WStringValue::GetValue(value.get()).compare(expected));
@@ -161,7 +161,7 @@ TEST(DecoderTest, DecodeFixedW16String) {
   const char original[] = "T\0e\0s\0t\0.\0\0\0\0\0\0";
   const wchar_t expected[] = L"Test.";
   Decoder decoder(&original[0], sizeof(original) / sizeof(char));
-  scoped_ptr<WStringValue> value(decoder.DecodeFixedW16String(8));
+  std::unique_ptr<WStringValue> value(decoder.DecodeFixedW16String(8));
   EXPECT_EQ(event::VALUE_WSTRING, value->GetType());
   EXPECT_EQ(0U, decoder.RemainingBytes());
   EXPECT_EQ(0, WStringValue::GetValue(value.get()).compare(expected));

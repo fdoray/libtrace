@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The LibTrace Authors.
+// Copyright (c) 2015 The LibTrace Authors.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -93,9 +93,9 @@ TEST(EventToStringTest, StructType) {
 }
 
 TEST(EventToStringTest, Event) {
-  scoped_ptr<StructValue> payload(new StructValue());
+  std::unique_ptr<StructValue> payload(new StructValue());
   payload->AddField<IntValue>("field", 12);
-  Event event(42, payload.PassAs<const Value>());
+  Event event(42, std::move(payload));
 
   std::string event_str;
   EXPECT_TRUE(ToString(event, &event_str));

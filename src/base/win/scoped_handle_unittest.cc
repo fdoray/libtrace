@@ -109,14 +109,14 @@ class ScopedHandleTest : public testing::Test {
  private:
   // Overridden from testing::Test:
   // @{
-  virtual void SetUp() OVERRIDE {
+  virtual void SetUp() override {
     testing::Test::SetUp();
 
     // Create a temporary file for the test.
     ASSERT_TRUE(CreateTemporaryFile(&temp_file_name_, &temp_file_handle_));
   }
 
-  virtual void TearDown() OVERRIDE {
+  virtual void TearDown() override {
     // Delete the temporary file if it has not already been deleted.
     if (TempFileExists())
       ::DeleteFileW(temp_file_name_.c_str());

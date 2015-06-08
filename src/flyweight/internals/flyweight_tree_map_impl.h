@@ -54,13 +54,13 @@ class FlyweightTreeMapImpl : public flyweight::FlyweightImpl<T, I> {
   FlyweightTreeMapImpl() : flyweight::FlyweightImpl<T, I>() {
   }
 
-  // Overrides flyweight::FlyweightImpl<T, I>.
+  // overrides flyweight::FlyweightImpl<T, I>.
   // @{
-  virtual const Key& Insert(const T& value) OVERRIDE;
-  virtual const T& ValueOf(const Key& key) const OVERRIDE;
-  virtual void Enumerate(const Observer& observer) const OVERRIDE;
-  virtual void EnumerateKeys(const ObserverKeys& observer) const OVERRIDE;
-  virtual void EnumerateValues(const ObserverValues& observer) const OVERRIDE;
+  virtual const Key& Insert(const T& value) override;
+  virtual const T& ValueOf(const Key& key) const override;
+  virtual void Enumerate(const Observer& observer) const override;
+  virtual void EnumerateKeys(const ObserverKeys& observer) const override;
+  virtual void EnumerateValues(const ObserverValues& observer) const override;
   // @}
 
  private:

@@ -58,14 +58,14 @@ TEST(ParserTest, Parse) {
   parser::Parser parser;
   MockObserver observer;
 
-  scoped_ptr<MockParser> impl(new MockParser());
+  std::unique_ptr<MockParser> impl(new MockParser());
   std::string filename("dummy");
 
   EXPECT_CALL(*impl.get(), AddTraceFile(Ref(filename)))
      .WillOnce(Return(true));
   EXPECT_CALL(*impl.get(), Parse(Ref(observer)));
 
-  parser.RegisterParser(impl.PassAs<parser::ParserImpl>());
+  parser.RegisterParser(std::move(impl));
   EXPECT_TRUE(parser.AddTraceFile(filename));
 
   parser.Parse(observer);

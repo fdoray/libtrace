@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The LibTrace Authors.
+// Copyright (c) 2015 The LibTrace Authors.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -173,7 +173,7 @@ TEST(ScalarValueTest, GetAsInteger) {
   ULongValue ulong_value(42U);
   DoubleValue double_value(.42);
   Value* value;
-  int32 resut_value;
+  int32_t resut_value;
 
   value = &bool_value;
   resut_value = 0;
@@ -229,7 +229,7 @@ TEST(ScalarValueTest, GetAsInteger) {
 TEST(ScalarValueTest, GetAsIntegerWithULong) {
   ULongValue ulong_value1(0x000000007FFFFFFFULL);
   ULongValue ulong_value2(0xFFFFFFFFFFFFFFFFULL);
-  int32 resut_value = 0;
+  int32_t resut_value = 0;
   Value* value = &ulong_value1;
   EXPECT_TRUE(value->GetAsInteger(&resut_value));
   value = &ulong_value2;
@@ -248,7 +248,7 @@ TEST(ScalarValueTest, GetAsUInteger) {
   ULongValue ulong_value(42U);
   DoubleValue double_value(.42);
   Value* value;
-  uint32 resut_value;
+  uint32_t resut_value;
 
   value = &bool_value;
   resut_value = 0;
@@ -307,7 +307,7 @@ TEST(ScalarValueTest, GetAsUIntegerWithNegativeValue) {
   IntValue int_value(-1);
   LongValue long_value(-1);
   Value* value;
-  uint32 resut_value;
+  uint32_t resut_value;
 
   value = &char_value;
   resut_value = 0;
@@ -334,7 +334,7 @@ TEST(ScalarValueTest, GetAsUIntegerWithBigValue) {
   LongValue long_value(0x1FFFFFFFFLL);
   ULongValue ulong_value(0x1FFFFFFFFLL);
   Value* value;
-  uint32 resut_value;
+  uint32_t resut_value;
 
   value = &long_value;
   resut_value = 0;
@@ -359,7 +359,7 @@ TEST(ScalarValueTest, GetAsLong) {
   LongValue ulong_value(42U);
   DoubleValue double_value(.42);
   Value* value;
-  int64 resut_value;
+  int64_t resut_value;
 
   value = &bool_value;
   resut_value = 0;
@@ -415,7 +415,7 @@ TEST(ScalarValueTest, GetAsLong) {
 TEST(ScalarValueTest, GetAsLongWithBigValue) {
   ULongValue ulong_value1(0x7FFFFFFFFFFFFFFFULL);
   ULongValue ulong_value2(0xFFFFFFFFFFFFFFFFULL);
-  int64 resut_value = 0;
+  int64_t resut_value = 0;
   Value* value = &ulong_value1;
   EXPECT_TRUE(value->GetAsLong(&resut_value));
   value = &ulong_value2;
@@ -434,7 +434,7 @@ TEST(ScalarValueTest, GetAsULong) {
   ULongValue ulong_value(42U);
   DoubleValue double_value(.42);
   Value* value;
-  uint64 resut_value;
+  uint64_t resut_value;
 
   value = &bool_value;
   resut_value = 0;
@@ -493,7 +493,7 @@ TEST(ScalarValueTest, GetAsULongWithNegativeValue) {
   IntValue int_value(-1);
   LongValue long_value(-1);
   Value* value;
-  uint64 resut_value;
+  uint64_t resut_value;
 
   value = &char_value;
   resut_value = 0;
@@ -624,11 +624,11 @@ TEST(ScalarValueTest, GetValueSafe) {
   LongValue value_long(4L);
   const Value* value = &value_long;
 
-  int64 raw_long_value = 0;
+  int64_t raw_long_value = 0;
   EXPECT_TRUE(LongValue::GetValue(value, &raw_long_value));
   EXPECT_EQ(4L, raw_long_value);
 
-  int32 raw_int_value = 0;
+  int32_t raw_int_value = 0;
   EXPECT_FALSE(IntValue::GetValue(value, &raw_int_value));
   EXPECT_EQ(0, raw_int_value);
 }
@@ -674,17 +674,17 @@ TEST(ArrayValueTest, Operations) {
 }
 
 TEST(ArrayValueTest, Iterate) {
-  scoped_ptr<Value> v1(new IntValue(42));
-  scoped_ptr<Value> v2(new IntValue(43));
-  scoped_ptr<Value> v3(new IntValue(44));
+  std::unique_ptr<Value> v1(new IntValue(42));
+  std::unique_ptr<Value> v2(new IntValue(43));
+  std::unique_ptr<Value> v3(new IntValue(44));
   Value* v1_raw = v1.get();
   Value* v2_raw = v2.get();
   Value* v3_raw = v3.get();
 
   ArrayValue value;
-  value.Append(v1.Pass());
-  value.Append(v2.Pass());
-  value.Append(v3.Pass());
+  value.Append(std::move(v1));
+  value.Append(std::move(v2));
+  value.Append(std::move(v3));
 
   ArrayValue::const_iterator it = value.values_begin();
   EXPECT_EQ(v1_raw, *it);
@@ -718,7 +718,7 @@ TEST(ArrayValueTest, Equals) {
   array_value1.Append<IntValue>(44);
 
   ArrayValue array_value2;
-  int32 values[] = { 42, 43, 44 };
+  int32_t values[] = { 42, 43, 44 };
   array_value2.AppendAll<IntValue>(&values[0], 3);
   ArrayValue array_value3;
   array_value3.AppendAll<IntValue>(&values[0], 2);
@@ -734,12 +734,12 @@ TEST(ArrayValueTest, Equals) {
 
 TEST(ArrayValueTest, Append) {
   ArrayValue array_value;
-  scoped_ptr<Value> v1(new IntValue(42));
-  scoped_ptr<Value> v2(new IntValue(43));
+  std::unique_ptr<Value> v1(new IntValue(42));
+  std::unique_ptr<Value> v2(new IntValue(43));
 
-  array_value.Append(v1.Pass());
+  array_value.Append(std::move(v1));
   EXPECT_EQ(1, array_value.Length());
-  array_value.Append(v2.Pass());
+  array_value.Append(std::move(v2));
   EXPECT_EQ(2, array_value.Length());
   array_value.Append<IntValue>(44);
   EXPECT_EQ(3, array_value.Length());
@@ -747,7 +747,7 @@ TEST(ArrayValueTest, Append) {
 
 TEST(ArrayValueTest, At) {
   ArrayValue array_value;
-  int32 values[] = { 42, 43, 44 };
+  int32_t values[] = { 42, 43, 44 };
   array_value.AppendAll<IntValue>(&values[0], 3);
 
   ArrayValue* ptr = &array_value;
@@ -778,25 +778,25 @@ TEST(ArrayValueTest, GetElementAs) {
   EXPECT_TRUE(array_value.GetElementAs<IntValue>(0, &raw_value));
   EXPECT_FALSE(array_value.GetElementAs<UIntValue>(0, &raw_uvalue));
 
-  int32 int_value = 0;
+  int32_t int_value = 0;
   EXPECT_FALSE(array_value.GetElementAsInteger(1000, &int_value));
   EXPECT_EQ(0, int_value);
   EXPECT_TRUE(array_value.GetElementAsInteger(0, &int_value));
   EXPECT_EQ(42, int_value);
 
-  uint32 uint_value = 0;
+  uint32_t uint_value = 0;
   EXPECT_FALSE(array_value.GetElementAsUInteger(1000, &uint_value));
   EXPECT_EQ(0, uint_value);
   EXPECT_TRUE(array_value.GetElementAsUInteger(1, &uint_value));
   EXPECT_EQ(43, uint_value);
 
-  int64 long_value = 0;
+  int64_t long_value = 0;
   EXPECT_FALSE(array_value.GetElementAsLong(1000, &long_value));
   EXPECT_EQ(0LL, long_value);
   EXPECT_TRUE(array_value.GetElementAsLong(2, &long_value));
   EXPECT_EQ(44LL, long_value);
 
-  uint64 ulong_value = 0;
+  uint64_t ulong_value = 0;
   EXPECT_FALSE(array_value.GetElementAsULong(1000, &ulong_value));
   EXPECT_EQ(0ULL, ulong_value);
   EXPECT_TRUE(array_value.GetElementAsULong(3, &ulong_value));
@@ -825,12 +825,12 @@ TEST(ArrayValueTest, Destructor) {
   int count = 0;
   {
     ArrayValue value;
-    scoped_ptr<Value> field1(new IncrementOnDelete(41, &count));
-    value.Append(field1.Pass());
-    scoped_ptr<Value> field2(new IncrementOnDelete(42, &count));
-    value.Append(field2.Pass());
-    scoped_ptr<Value> field3(new IncrementOnDelete(43, &count));
-    value.Append(field3.Pass());
+    std::unique_ptr<Value> field1(new IncrementOnDelete(41, &count));
+    value.Append(std::move(field1));
+    std::unique_ptr<Value> field2(new IncrementOnDelete(42, &count));
+    value.Append(std::move(field2));
+    std::unique_ptr<Value> field3(new IncrementOnDelete(43, &count));
+    value.Append(std::move(field3));
     EXPECT_EQ(0, count);
   }
   EXPECT_EQ(3, count);
@@ -850,9 +850,9 @@ TEST(StructValueTest, Operations) {
 
   EXPECT_FALSE(value.HasField("field"));
 
-  scoped_ptr<Value> field(new IntValue(42));
+  std::unique_ptr<Value> field(new IntValue(42));
   Value* raw_field = field.get();
-  EXPECT_TRUE(value.AddField("field", field.Pass()));
+  EXPECT_TRUE(value.AddField("field", std::move(field)));
   EXPECT_TRUE(value.HasField("field"));
   EXPECT_FALSE(value.AddField<IntValue>("field", 42));
 
@@ -873,28 +873,28 @@ TEST(StructValueTest, AddFieldTakesOwnership) {
   StructValue value;
   EXPECT_FALSE(value.HasField("field"));
 
-  scoped_ptr<Value> field(new IntValue(42));
-  EXPECT_TRUE(value.AddField("field", field.Pass()));
+  std::unique_ptr<Value> field(new IntValue(42));
+  EXPECT_TRUE(value.AddField("field", std::move(field)));
   EXPECT_TRUE(value.HasField("field"));
   EXPECT_EQ(NULL, field.get());
 
-  scoped_ptr<Value> other(new IntValue(24));
-  EXPECT_FALSE(value.AddField("field", other.Pass()));
+  std::unique_ptr<Value> other(new IntValue(24));
+  EXPECT_FALSE(value.AddField("field", std::move(other)));
   EXPECT_EQ(NULL, other.get());
 }
 
 TEST(StructValueTest, Iterate) {
-  scoped_ptr<Value> v1(new IntValue(42));
-  scoped_ptr<Value> v2(new IntValue(43));
-  scoped_ptr<Value> v3(new IntValue(44));
+  std::unique_ptr<Value> v1(new IntValue(42));
+  std::unique_ptr<Value> v2(new IntValue(43));
+  std::unique_ptr<Value> v3(new IntValue(44));
   Value* raw_v1 = v1.get();
   Value* raw_v2 = v2.get();
   Value* raw_v3 = v3.get();
 
   StructValue value;
-  value.AddField("field1", v1.Pass());
-  value.AddField("field2", v2.Pass());
-  value.AddField("field3", v3.Pass());
+  value.AddField("field1", std::move(v1));
+  value.AddField("field2", std::move(v2));
+  value.AddField("field3", std::move(v3));
 
   StructValue::const_iterator it = value.fields_begin();
   EXPECT_STREQ("field1", it->first.c_str());
@@ -953,22 +953,22 @@ TEST(StructValueTest, GetFieldAs) {
   EXPECT_FALSE(struct_value.GetFieldAs<LongValue>("no_field", &raw_value));
   EXPECT_TRUE(struct_value.GetFieldAs<LongValue>("integer", &raw_value));
 
-  int32 int_value = 0;
+  int32_t int_value = 0;
   EXPECT_TRUE(struct_value.GetFieldAsInteger("integer", &int_value));
   EXPECT_FALSE(struct_value.GetFieldAsInteger("string", &int_value));
   EXPECT_FALSE(struct_value.GetFieldAsInteger("no_field", &int_value));
 
-  uint32 uint_value = 0;
+  uint32_t uint_value = 0;
   EXPECT_TRUE(struct_value.GetFieldAsUInteger("integer", &uint_value));
   EXPECT_FALSE(struct_value.GetFieldAsUInteger("string", &uint_value));
   EXPECT_FALSE(struct_value.GetFieldAsUInteger("no_field", &uint_value));
 
-  int64 long_value = 0;
+  int64_t long_value = 0;
   EXPECT_TRUE(struct_value.GetFieldAsLong("integer", &long_value));
   EXPECT_FALSE(struct_value.GetFieldAsLong("string", &long_value));
   EXPECT_FALSE(struct_value.GetFieldAsLong("no_field", &long_value));
 
-  uint64 ulong_value = 0;
+  uint64_t ulong_value = 0;
   EXPECT_TRUE(struct_value.GetFieldAsULong("integer", &ulong_value));
   EXPECT_FALSE(struct_value.GetFieldAsULong("string", &ulong_value));
   EXPECT_FALSE(struct_value.GetFieldAsULong("no_field", &ulong_value));
@@ -993,12 +993,12 @@ TEST(StructValueTest, Destructor) {
   int count = 0;
   {
     StructValue value;
-    scoped_ptr<Value> field1(new IncrementOnDelete(41, &count));
-    EXPECT_TRUE(value.AddField("field1", field1.Pass()));
-    scoped_ptr<Value> field2(new IncrementOnDelete(42, &count));
-    EXPECT_TRUE(value.AddField("field2", field2.Pass()));
-    scoped_ptr<Value> field3(new IncrementOnDelete(43, &count));
-    EXPECT_TRUE(value.AddField("field3", field3.Pass()));
+    std::unique_ptr<Value> field1(new IncrementOnDelete(41, &count));
+    EXPECT_TRUE(value.AddField("field1", std::move(field1)));
+    std::unique_ptr<Value> field2(new IncrementOnDelete(42, &count));
+    EXPECT_TRUE(value.AddField("field2", std::move(field2)));
+    std::unique_ptr<Value> field3(new IncrementOnDelete(43, &count));
+    EXPECT_TRUE(value.AddField("field3", std::move(field3)));
     EXPECT_EQ(0, count);
   }
   EXPECT_EQ(3, count);

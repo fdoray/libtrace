@@ -32,20 +32,20 @@
 //  Decoder decoder(&payload[0], sizeof(payload));
 //
 //  // Decode a single scalar value.
-//  scoped_ptr<Value> my_int(decoder.Decode<UIntValue>());
+//  std::unique_ptr<Value> my_int(decoder.Decode<UIntValue>());
 //
 //  // Decode an array of values.
-//  scoped_ptr<Value> my_array(decoder->DecodeArray<UIntValue>(10));
+//  std::unique_ptr<Value> my_array(decoder->DecodeArray<UIntValue>(10));
 
 #ifndef PARSER_DECODER_H_
 #define PARSER_DECODER_H_
 
 #include <iostream>
 #include <iomanip>
+#include <memory>
 #include <set>
 
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "event/value.h"
 
 namespace parser {
@@ -76,62 +76,62 @@ class Decoder {
   // @tparam T the type of Value to decode.
   // @returns the decoded value if successful, NULL otherwise.
   template <typename T>
-  scoped_ptr<T> Decode() {
+  std::unique_ptr<T> Decode() {
     typedef typename T::ScalarType ScalarType;
-    scoped_ptr<T> result;
+    std::unique_ptr<T> result;
 
     // There is not enough bytes, returns no value.
     if (RemainingBytes() < sizeof(ScalarType))
-      return result.Pass();
+      return std::move(result);
 
     // Consume the bytes.
     size_t offset = position_;
     position_ += sizeof(ScalarType);
     result.reset(
         new T(*reinterpret_cast<const ScalarType*>(&buffer_[offset])));
-    return result.Pass();
+    return std::move(result);
   }
 
   // Decode an array of scalar Value.
   // @tparam T the type of Value to decode.
   // @returns the decoded array if successful, NULL otherwise.
   template <typename T>
-  scoped_ptr<ArrayValue> DecodeArray(size_t size) {
-    scoped_ptr<event::ArrayValue> array(new event::ArrayValue());
+  std::unique_ptr<ArrayValue> DecodeArray(size_t size) {
+    std::unique_ptr<event::ArrayValue> array(new event::ArrayValue());
 
     // Decode |size| elements from the sequence of bytes.
     for (size_t i = 0; i < size; ++i) {
-      scoped_ptr<Value> element(Decode<T>());
+      std::unique_ptr<Value> element(Decode<T>());
 
       // If an error occurred, clears the array and returns no value.
       if (element.get() == NULL) {
         array.reset(NULL);
-        return array.Pass();
+        return std::move(array);
       }
 
       // Append the new element to the array.
-      array->Append(element.Pass());
+      array->Append(std::move(element));
     }
 
-    return array.Pass();
+    return std::move(array);
   }
 
   // Decode a string.
   // @returns the decoded string.
-  scoped_ptr<StringValue> DecodeString();
+  std::unique_ptr<StringValue> DecodeString();
 
   // Decode a std::wstring.
   // @returns the decoded string.
-  scoped_ptr<WStringValue> DecodeWString();
+  std::unique_ptr<WStringValue> DecodeWString();
 
   // Decode a string of 16-bit chars.
   // @returns the decoded string.
-  scoped_ptr<WStringValue> DecodeW16String();
+  std::unique_ptr<WStringValue> DecodeW16String();
 
   // Decode a string of 16-bit chars with a fixed length.
   // @param length the length of the fixed array holding the string.
   // @returns the decoded string.
-  scoped_ptr<WStringValue> DecodeFixedW16String(size_t length);
+  std::unique_ptr<WStringValue> DecodeFixedW16String(size_t length);
 
   // Advances the current read position by the specified number of bytes.
   // @param size number of bytes to skip.
@@ -156,12 +156,12 @@ class Decoder {
 };
 
 template<>
-inline scoped_ptr<event::StringValue> Decoder::Decode<event::StringValue>() {
+inline std::unique_ptr<event::StringValue> Decoder::Decode<event::StringValue>() {
   return DecodeString();
 }
 
 template<>
-inline scoped_ptr<event::WStringValue> Decoder::Decode<event::WStringValue>() {
+inline std::unique_ptr<event::WStringValue> Decoder::Decode<event::WStringValue>() {
   return DecodeWString();
 }
 

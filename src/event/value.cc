@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The LibTrace Authors.
+// Copyright (c) 2015 The LibTrace Authors.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,7 @@
 
 namespace event {
 
-bool Value::GetAsInteger(int32* value) const {
+bool Value::GetAsInteger(int32_t* value) const {
   DCHECK(value != NULL);
 
   switch (GetType()) {
@@ -61,26 +61,26 @@ bool Value::GetAsInteger(int32* value) const {
       return true;
     }
     case VALUE_UINT: {
-      uint32 raw_value = UIntValue::GetValue(this);
-      if (raw_value > static_cast<uint32>(IntValue::MaxValue()))
+      uint32_t raw_value = UIntValue::GetValue(this);
+      if (raw_value > static_cast<uint32_t>(IntValue::MaxValue()))
         return false;
-      *value = static_cast<int32>(raw_value);
+      *value = static_cast<int32_t>(raw_value);
       return true;
     }
     case VALUE_LONG: {
-      int64 raw_value = LongValue::GetValue(this);
-      if (raw_value > static_cast<int64>(IntValue::MaxValue()) ||
-          raw_value < static_cast<int64>(IntValue::MinValue())) {
+      int64_t raw_value = LongValue::GetValue(this);
+      if (raw_value > static_cast<int64_t>(IntValue::MaxValue()) ||
+          raw_value < static_cast<int64_t>(IntValue::MinValue())) {
          return false;
       }
-      *value = static_cast<int32>(raw_value);
+      *value = static_cast<int32_t>(raw_value);
       return true;
     }
     case VALUE_ULONG: {
-      uint64 raw_value = ULongValue::GetValue(this);
-      if (raw_value > static_cast<uint64>(IntValue::MaxValue()))
+      uint64_t raw_value = ULongValue::GetValue(this);
+      if (raw_value > static_cast<uint64_t>(IntValue::MaxValue()))
         return false;
-      *value = static_cast<int32>(raw_value);
+      *value = static_cast<int32_t>(raw_value);
       return true;
     }
     default:
@@ -88,7 +88,7 @@ bool Value::GetAsInteger(int32* value) const {
   }
 }
 
-bool Value::GetAsUInteger(uint32* value) const {
+bool Value::GetAsUInteger(uint32_t* value) const {
   DCHECK(value != NULL);
 
   switch (GetType()) {
@@ -97,10 +97,10 @@ bool Value::GetAsUInteger(uint32* value) const {
       return true;
     }
     case VALUE_CHAR: {
-      int32 raw_value = CharValue::GetValue(this);
+      int32_t raw_value = CharValue::GetValue(this);
       if (raw_value < 0)
         return false;
-      *value = static_cast<uint32>(raw_value);
+      *value = static_cast<uint32_t>(raw_value);
       return true;
     }
     case VALUE_UCHAR: {
@@ -108,10 +108,10 @@ bool Value::GetAsUInteger(uint32* value) const {
       return true;
     }
     case VALUE_SHORT: {
-      int32 raw_value = ShortValue::GetValue(this);
+      int32_t raw_value = ShortValue::GetValue(this);
       if (raw_value < 0)
         return false;
-      *value = static_cast<uint32>(raw_value);
+      *value = static_cast<uint32_t>(raw_value);
       return true;
     }
     case VALUE_USHORT: {
@@ -119,10 +119,10 @@ bool Value::GetAsUInteger(uint32* value) const {
       return true;
     }
     case VALUE_INT: {
-       int32 raw_value = IntValue::GetValue(this);
+       int32_t raw_value = IntValue::GetValue(this);
        if (raw_value < 0)
          return false;
-      *value = static_cast<uint32>(raw_value);
+      *value = static_cast<uint32_t>(raw_value);
       return true;
     }
     case VALUE_UINT: {
@@ -130,19 +130,19 @@ bool Value::GetAsUInteger(uint32* value) const {
       return true;
     }
     case VALUE_LONG: {
-      int64 raw_value = LongValue::GetValue(this);
+      int64_t raw_value = LongValue::GetValue(this);
       if (raw_value < 0)
         return false;
-      if (raw_value > static_cast<int64>(UIntValue::MaxValue()))
+      if (raw_value > static_cast<int64_t>(UIntValue::MaxValue()))
         return false;
-      *value = static_cast<uint32>(raw_value);
+      *value = static_cast<uint32_t>(raw_value);
       return true;
     }
     case VALUE_ULONG: {
-      uint64 raw_value = ULongValue::GetValue(this);
-      if (raw_value > static_cast<uint64>(UIntValue::MaxValue()))
+      uint64_t raw_value = ULongValue::GetValue(this);
+      if (raw_value > static_cast<uint64_t>(UIntValue::MaxValue()))
         return false;
-      *value = static_cast<uint32>(raw_value);
+      *value = static_cast<uint32_t>(raw_value);
       return true;
     }
     default:
@@ -150,7 +150,7 @@ bool Value::GetAsUInteger(uint32* value) const {
   }
 }
 
-bool Value::GetAsLong(int64* value) const {
+bool Value::GetAsLong(int64_t* value) const {
   DCHECK(value != NULL);
 
   switch (GetType()) {
@@ -187,10 +187,10 @@ bool Value::GetAsLong(int64* value) const {
       return true;
     }
     case VALUE_ULONG: {
-      uint64 uvalue = ULongValue::GetValue(this);
-      if (uvalue > static_cast<uint64>(LongValue::MaxValue()))
+      uint64_t uvalue = ULongValue::GetValue(this);
+      if (uvalue > static_cast<uint64_t>(LongValue::MaxValue()))
         return false;
-      *value = static_cast<int64>(uvalue);
+      *value = static_cast<int64_t>(uvalue);
       return true;
     }
     default:
@@ -198,7 +198,7 @@ bool Value::GetAsLong(int64* value) const {
   }
 }
 
-bool Value::GetAsULong(uint64* value) const {
+bool Value::GetAsULong(uint64_t* value) const {
   DCHECK(value != NULL);
 
   switch (GetType()) {
@@ -207,10 +207,10 @@ bool Value::GetAsULong(uint64* value) const {
       return true;
     }
     case VALUE_CHAR: {
-      int32 raw_value = CharValue::GetValue(this);
+      int32_t raw_value = CharValue::GetValue(this);
       if (raw_value < 0)
         return false;
-      *value = static_cast<uint64>(raw_value);
+      *value = static_cast<uint64_t>(raw_value);
       return true;
     }
     case VALUE_UCHAR: {
@@ -218,10 +218,10 @@ bool Value::GetAsULong(uint64* value) const {
       return true;
     }
     case VALUE_SHORT: {
-      int32 raw_value = ShortValue::GetValue(this);
+      int32_t raw_value = ShortValue::GetValue(this);
       if (raw_value < 0)
         return false;
-      *value = static_cast<uint64>(raw_value);
+      *value = static_cast<uint64_t>(raw_value);
       return true;
     }
     case VALUE_USHORT: {
@@ -229,10 +229,10 @@ bool Value::GetAsULong(uint64* value) const {
       return true;
     }
     case VALUE_INT: {
-      int32 raw_value = IntValue::GetValue(this);
+      int32_t raw_value = IntValue::GetValue(this);
       if (raw_value < 0)
         return false;
-      *value = static_cast<uint64>(raw_value);
+      *value = static_cast<uint64_t>(raw_value);
       return true;
     }
     case VALUE_UINT: {
@@ -240,10 +240,10 @@ bool Value::GetAsULong(uint64* value) const {
       return true;
     }
     case VALUE_LONG: {
-      int64 raw_value = LongValue::GetValue(this);
+      int64_t raw_value = LongValue::GetValue(this);
       if (raw_value < 0)
         return false;
-      *value = static_cast<uint64>(raw_value);
+      *value = static_cast<uint64_t>(raw_value);
       return true;
     }
     case VALUE_ULONG: {
@@ -399,7 +399,7 @@ T ScalarValue<T, TYPE>::MaxValue() {
 template<int TYPE>
 ValueType AggregateValue<TYPE>::GetType() const {
   return static_cast<ValueType>(TYPE);
-};
+}
 
 template<int TYPE>
 bool AggregateValue<TYPE>::IsScalar() const {
@@ -442,7 +442,7 @@ size_t ArrayValue::Length() const {
   return values_.size();
 }
 
-void ArrayValue::Append(scoped_ptr<Value> value) {
+void ArrayValue::Append(std::unique_ptr<Value> value) {
   DCHECK(value.get() != NULL);
   values_.push_back(value.release());
 }
@@ -463,28 +463,28 @@ Value* ArrayValue::at(size_t index) {
   return values_.at(index);
 }
 
-bool ArrayValue::GetElementAsInteger(size_t index, int32* value) const {
+bool ArrayValue::GetElementAsInteger(size_t index, int32_t* value) const {
   DCHECK(value != NULL);
   if (index >= values_.size())
     return false;
   return at(index)->GetAsInteger(value);
 }
 
-bool ArrayValue::GetElementAsUInteger(size_t index, uint32* value) const {
+bool ArrayValue::GetElementAsUInteger(size_t index, uint32_t* value) const {
   DCHECK(value != NULL);
   if (index >= values_.size())
     return false;
   return at(index)->GetAsUInteger(value);
 }
 
-bool ArrayValue::GetElementAsLong(size_t index, int64* value) const {
+bool ArrayValue::GetElementAsLong(size_t index, int64_t* value) const {
   DCHECK(value != NULL);
   if (index >= values_.size())
     return false;
   return at(index)->GetAsLong(value);
 }
 
-bool ArrayValue::GetElementAsULong(size_t index, uint64* value) const {
+bool ArrayValue::GetElementAsULong(size_t index, uint64_t* value) const {
   DCHECK(value != NULL);
   if (index >= values_.size())
     return false;
@@ -577,7 +577,7 @@ bool StructValue::GetField(const std::string& name,
 }
 
 bool StructValue::GetFieldAsInteger(
-    const std::string& name, int32* value) const {
+    const std::string& name, int32_t* value) const {
   DCHECK(value != NULL);
   const Value* field = NULL;
   if (!GetField(name, &field))
@@ -586,7 +586,7 @@ bool StructValue::GetFieldAsInteger(
 }
 
 bool StructValue::GetFieldAsUInteger(
-    const std::string& name, uint32* value) const {
+    const std::string& name, uint32_t* value) const {
   DCHECK(value != NULL);
   const Value* field = NULL;
   if (!GetField(name, &field))
@@ -594,7 +594,7 @@ bool StructValue::GetFieldAsUInteger(
   return field->GetAsUInteger(value);
 }
 
-bool StructValue::GetFieldAsLong(const std::string& name, int64* value) const {
+bool StructValue::GetFieldAsLong(const std::string& name, int64_t* value) const {
   DCHECK(value != NULL);
   const Value* field = NULL;
   if (!GetField(name, &field))
@@ -603,7 +603,7 @@ bool StructValue::GetFieldAsLong(const std::string& name, int64* value) const {
 }
 
 bool StructValue::GetFieldAsULong(
-    const std::string& name, uint64* value) const {
+    const std::string& name, uint64_t* value) const {
   DCHECK(value != NULL);
   const Value* field = NULL;
   if (!GetField(name, &field))
@@ -638,7 +638,7 @@ bool StructValue::GetFieldAsWString(
   return field->GetAsWString(value);
 }
 
-bool StructValue::AddField(const std::string& name, scoped_ptr<Value> value) {
+bool StructValue::AddField(const std::string& name, std::unique_ptr<Value> value) {
   DCHECK(value.get() != NULL);
   if (HasField(name))
     return false;
@@ -689,14 +689,14 @@ const StructValue* StructValue::Cast(const Value* value) {
 // Force a template instantiation in this compilation unit. This must be at
 // the end of the file because only defined methods are instantiated.
 template class ScalarValue<bool, VALUE_BOOL>;
-template class ScalarValue<int8, VALUE_CHAR>;
-template class ScalarValue<uint8, VALUE_UCHAR>;
-template class ScalarValue<int16, VALUE_SHORT>;
-template class ScalarValue<uint16, VALUE_USHORT>;
-template class ScalarValue<int32, VALUE_INT>;
-template class ScalarValue<uint32, VALUE_UINT>;
-template class ScalarValue<int64, VALUE_LONG>;
-template class ScalarValue<uint64, VALUE_ULONG>;
+template class ScalarValue<int8_t, VALUE_CHAR>;
+template class ScalarValue<uint8_t, VALUE_UCHAR>;
+template class ScalarValue<int16_t, VALUE_SHORT>;
+template class ScalarValue<uint16_t, VALUE_USHORT>;
+template class ScalarValue<int32_t, VALUE_INT>;
+template class ScalarValue<uint32_t, VALUE_UINT>;
+template class ScalarValue<int64_t, VALUE_LONG>;
+template class ScalarValue<uint64_t, VALUE_ULONG>;
 template class ScalarValue<std::string, VALUE_STRING>;
 template class ScalarValue<std::wstring, VALUE_WSTRING>;
 template class ScalarValue<float, VALUE_FLOAT>;

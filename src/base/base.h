@@ -26,36 +26,10 @@
 #ifndef BASE_BASE_H_
 #define BASE_BASE_H_
 
-// TODO(etienneb): Figure out a portable way to do this.
-typedef char int8;
-typedef unsigned char uint8;
-typedef short int16;
-typedef unsigned short uint16;
-typedef int int32;
-typedef unsigned int uint32;
-typedef long long int64;
-typedef unsigned long long uint64;
-
 // Macro to disable the copy constructor and assignment operator.
 // Must be placed with the private declarations of a class.
 #define DISALLOW_COPY_AND_ASSIGN(ClassType)                                    \
   ClassType(const ClassType&);                                                 \
   void operator=(const ClassType&)                                             \
-
-// Macro to annotate methods that are overriding virtual methods from a base
-// class.
-// Sample use:
-//     virtual void foo() OVERRIDE;
-#if defined(_MSC_VER)
-#define OVERRIDE override
-#elif defined(__clang__)
-#define OVERRIDE override
-#elif defined(COMPILER_GCC) && __cplusplus >= 201103 && \
-      (__GNUC__ * 10000 + __GNUC_MINOR__ * 100) >= 40700
-// GCC 4.7 supports explicit virtual overrides when C++11 support is enabled.
-#define OVERRIDE override
-#else
-#define OVERRIDE
-#endif
 
 #endif  // BASE_BASE_H_

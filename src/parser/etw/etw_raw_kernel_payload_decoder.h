@@ -26,9 +26,8 @@
 #ifndef PARSER_ETW_ETW_RAW_KERNEL_PAYLOAD_DECODER_H_
 #define PARSER_ETW_ETW_RAW_KERNEL_PAYLOAD_DECODER_H_
 
+#include <memory>
 #include <string>
-
-#include "base/scoped_ptr.h"
 
 // Forward declaration.
 namespace event {
@@ -59,7 +58,7 @@ bool DecodeRawETWKernelPayload(const std::string& provider_id,
                                size_t payload_size,
                                std::string* operation,
                                std::string* category,
-                               scoped_ptr<event::Value>* decoded_payload);
+                               std::unique_ptr<event::Value>* decoded_payload);
 
 }  // namespace etw
 }  // namespace parser
