@@ -95,6 +95,7 @@ add_library(base
     src/base/bind_object.h
     src/base/logging.cc
     src/base/logging.h
+    src/base/multi_callback.h
     src/base/string_utils.cc
     src/base/string_utils.h
     ${BASE_WIN_SOURCES}
@@ -151,6 +152,7 @@ endif()
 if(GMOCK_FOUND)
 add_executable(unittests
     src/base/logging_unittest.cc
+    src/base/multi_callback_unittest.cc
     src/base/string_utils_unittest.cc
     ${BASE_WIN_UNITTEST}
     src/event/event_unittest.cc
