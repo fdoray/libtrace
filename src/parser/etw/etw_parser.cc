@@ -25,11 +25,6 @@
 
 #include "parser/etw/etw_parser.h"
 
-// Restrict the import to the windows basic includes.
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>  // NOLINT
-#include <evntcons.h>  // NOLINT
-
 #include "base/logging.h"
 #include "base/string_utils.h"
 #include "base/win/error_string.h"
@@ -51,9 +46,9 @@ using event::UCharValue;
 using event::ULongValue;
 using event::Value;
 
-// The only active event callback.
-// TODO(fdoray): If threaded, this could be a Thread-Local Storage.
-const ETWParser::EventCallback* event_callback;
+// Constant used to convert the frequency of the high-resolution performance
+// counter to a period, in ns.
+const double kPerfPeriodMultiplier = 10000000.0;
 
 //  Convert a GUID to a string representation.
 std::string GuidToString(const GUID& guid) {
@@ -92,59 +87,36 @@ bool DecodeRawETWPayload(const std::string& provider_id,
   return false;
 }
 
-void WINAPI ProcessEvent(PEVENT_RECORD pevent) {
-  DCHECK(pevent != NULL);
-
-  // Decode the payload of the event.
-  std::string operation;
-  std::string category;
-
-  std::string provider_guid = GuidToString(pevent->EventHeader.ProviderId);
-  std::unique_ptr<Value> payload;
-  if (!DecodeRawETWPayload(
-          provider_guid,
-          pevent->EventHeader.EventDescriptor.Version,
-          pevent->EventHeader.EventDescriptor.Opcode,
-          (pevent->EventHeader.Flags & EVENT_HEADER_FLAG_64_BIT_HEADER) != 0,
-          reinterpret_cast<const char*>(pevent->UserData),
-          pevent->UserDataLength,
-          &operation,
-          &category,
-          &payload)) {
-    return;
-  }
-
-  // Generate the event header fields.
-  std::unique_ptr<StructValue> fields(new StructValue());
-  fields->AddField<StringValue>("operation", operation);
-  fields->AddField<StringValue>("category", category);
-  fields->AddField<ULongValue>("process_id", pevent->EventHeader.ProcessId);
-  fields->AddField<ULongValue>("thread_id", pevent->EventHeader.ThreadId);
-  fields->AddField<UCharValue>("processor_number",
-                               pevent->BufferContext.ProcessorNumber);
-  fields->AddField("content", std::move(payload));
-
-  // Create the event with decoded fields.
-  Event event(Timestamp(pevent->EventHeader.TimeStamp.QuadPart),
-              std::move(fields));
-
-  // Send the event to the callback.
-  (*event_callback)(event);
-}
-
 }  // namespace
 
+ETWParser::ETWParser()
+    : event_callback_(nullptr),
+      first_event_system_ts_(0),
+      first_event_raw_ts_(0),
+      perf_period_(0) {
+}
+
 bool ETWParser::AddTraceFile(const std::wstring& path) {
-  if (!base::WStringEndsWith(path, L".etl"))
+  if (!traces_.empty()) {
+    LOG(ERROR) << "ETW Parser can only read one trace at a time." << std::endl;
     return false;
+  }
+  if (!base::WStringEndsWith(path, L".etl")) {
+    return false;
+  }
   traces_.push_back(path);
   return true;
 }
 
 void ETWParser::Parse(const EventCallback& callback) {
-  // Set the active callback.
-  DCHECK(event_callback == nullptr);
-  event_callback = &callback;
+  DCHECK(event_callback_ == nullptr);
+  DCHECK_EQ(first_event_system_ts_, 0);
+  DCHECK_EQ(first_event_raw_ts_, 0);
+  DCHECK_EQ(perf_period_, 0);
+  DCHECK_LE(traces_.size(), 1);
+
+  // Initialize the parser.
+  event_callback_ = &callback;
 
   // Open all trace files, and keep handles in a vector.
   bool error = false;
@@ -153,15 +125,22 @@ void ETWParser::Parse(const EventCallback& callback) {
     EVENT_TRACE_LOGFILE trace;
     ::memset(&trace, 0, sizeof(trace));
     trace.LogFileName = const_cast<LPWSTR>(traces_[i].c_str());
-    trace.ProcessTraceMode = PROCESS_TRACE_MODE_EVENT_RECORD;
-    trace.EventRecordCallback = &ProcessEvent;
+    trace.ProcessTraceMode = PROCESS_TRACE_MODE_EVENT_RECORD |
+        PROCESS_TRACE_MODE_RAW_TIMESTAMP;
+    trace.EventRecordCallback = &ETWParser::ProcessEvent;
+    trace.Context = this;
 
     TRACEHANDLE th = ::OpenTrace(&trace);
     if (th == INVALID_PROCESSTRACE_HANDLE) {
-      LOG(WARNING) << "OpenTrace failed with error " << base::GetLastWindowsErrorString();
+      LOG(WARNING) << "OpenTrace failed with error "
+                   << base::GetLastWindowsErrorString();
       error = true;
       break;
     }
+
+    first_event_system_ts_ = trace.LogfileHeader.StartTime.QuadPart;
+    perf_period_ =
+        kPerfPeriodMultiplier / trace.LogfileHeader.PerfFreq.QuadPart;
 
     handles.push_back(th);
   }
@@ -180,8 +159,63 @@ void ETWParser::Parse(const EventCallback& callback) {
     ::CloseTrace(handles[i]);
   }
 
-  // Remove the active callback.
-  event_callback = NULL;
+  // Reset the parser.
+  event_callback_ = nullptr;
+  first_event_system_ts_ = 0;
+  first_event_raw_ts_ = 0;
+  perf_period_ = 0;
+}
+
+void WINAPI ETWParser::ProcessEvent(PEVENT_RECORD pevent) {
+  DCHECK(pevent != NULL);
+  ETWParser* event_parser = reinterpret_cast<ETWParser*>(pevent->UserContext);
+  DCHECK(event_parser->event_callback_ != nullptr);
+
+  // Record the timestamp of the first event. It will be used to convert raw
+  // timestamps to system time.
+  if (event_parser->first_event_raw_ts_ == 0)
+    event_parser->first_event_raw_ts_ = pevent->EventHeader.TimeStamp.QuadPart;
+
+  // Decode the payload of the event.
+  std::string operation;
+  std::string category;
+
+  std::string provider_guid = GuidToString(pevent->EventHeader.ProviderId);
+  std::unique_ptr<Value> payload;
+  if (!DecodeRawETWPayload(
+      provider_guid,
+      pevent->EventHeader.EventDescriptor.Version,
+      pevent->EventHeader.EventDescriptor.Opcode,
+      (pevent->EventHeader.Flags & EVENT_HEADER_FLAG_64_BIT_HEADER) != 0,
+      reinterpret_cast<const char*>(pevent->UserData),
+      pevent->UserDataLength,
+      &operation,
+      &category,
+      &payload)) {
+      return;
+  }
+
+  // Generate the event header fields.
+  std::unique_ptr<StructValue> fields(new StructValue());
+  fields->AddField<StringValue>("operation", operation);
+  fields->AddField<StringValue>("category", category);
+  fields->AddField<ULongValue>("process_id", pevent->EventHeader.ProcessId);
+  fields->AddField<ULongValue>("thread_id", pevent->EventHeader.ThreadId);
+  fields->AddField<UCharValue>("processor_number",
+      pevent->BufferContext.ProcessorNumber);
+  fields->AddField("content", std::move(payload));
+
+  // Compute the timestamp.
+  uint64_t raw_ts = pevent->EventHeader.TimeStamp.QuadPart;
+  uint64_t system_ts = event_parser->first_event_system_ts_ +
+      static_cast<uint64_t>((raw_ts - event_parser->first_event_raw_ts_) *
+          event_parser->perf_period_);
+
+  // Create the event with decoded fields.
+  Event event(Timestamp(system_ts), std::move(fields));
+
+  // Send the event to the callback.
+  (*event_parser->event_callback_)(event);
 }
 
 }  // namespace etw

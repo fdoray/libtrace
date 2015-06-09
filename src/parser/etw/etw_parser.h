@@ -26,6 +26,11 @@
 #ifndef PARSER_ETW_ETW_PARSER_H_
 #define PARSER_ETW_ETW_PARSER_H_
 
+// Restrict the import to the windows basic includes.
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>  // NOLINT
+#include <evntcons.h>  // NOLINT
+
 #include <functional>
 #include <string>
 #include <vector>
@@ -43,8 +48,7 @@ class ETWParser : public parser::ParserImpl {
   typedef parser::ParserImpl::EventCallback EventCallback;
 
   // Constuctor.
-  ETWParser() : parser::ParserImpl() {
-  }
+  ETWParser();
 
   // Adds a trace file to the list of traces to parse.
   // @param path absolute path to the trace file.
@@ -56,8 +60,25 @@ class ETWParser : public parser::ParserImpl {
   void Parse(const EventCallback& callback) override;
 
  private:
+  // Called by the ETW API when an event is read.
+  // @param pevent the read event.
+  static void WINAPI ProcessEvent(PEVENT_RECORD pevent);
+
   // Trace files to consume.
   std::vector<std::wstring> traces_;
+
+  // Active event callback.
+  const EventCallback* event_callback_;
+
+  // System timestamp of the first event. Used for timestamp conversion.
+  uint64_t first_event_system_ts_;
+
+  // RAW timestamp of the first event. Used for timestamp conversion.
+  uint64_t first_event_raw_ts_;
+
+  // Period of the high-resolution performance counter, in ns. Used for
+  // timestamp conversion.
+  double perf_period_;
 
   DISALLOW_COPY_AND_ASSIGN(ETWParser);
 };
