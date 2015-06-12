@@ -25,37 +25,6 @@ if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D _UNICODE /D UNICODE")
 endif()
 
-# Add ETW-Parser library.
-if(MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D USE_ETW_PARSER")
-  set(ETW_PARSER_SOURCES
-          src/parser/etw/etw_parser.cc
-          src/parser/etw/etw_parser.h
-          )
-  set(ETW_PARSER_UNITTEST
-          src/parser/etw/etw_parser_unittest.cc
-          )
-else()
-  set(ETW_PARSER_SOURCES "")
-  set(ETW_PARSER_UNITTEST "")
-endif()
-
-# Add files of the "base" library that are specific to Windows.
-if(WIN32)
-  set(BASE_WIN_SOURCES
-          src/base/win/error_string.cc
-          src/base/win/error_string.h
-          src/base/win/scoped_handle.cc
-          src/base/win/scoped_handle.h
-          )
-  set(BASE_WIN_UNITTEST
-          src/base/win/scoped_handle_unittest.cc
-          )
-else()
-  set(BASE_WIN_SOURCES "")
-  set(BASE_WIN_UNITTEST "")
-endif()
-
 # Add thread library.
 if(MSVC)
   set(PTHREAD_LIB "")
@@ -90,17 +59,35 @@ include_directories(src)
 # Libraries
 ####################
 
+# Base.
+if(WIN32)
+  set(BASE_WIN_SOURCES
+          src/base/win/error_string.cc
+          src/base/win/error_string.h
+          src/base/win/scoped_handle.cc
+          src/base/win/scoped_handle.h
+          )
+  set(BASE_WIN_UNITTEST
+          src/base/win/scoped_handle_unittest.cc
+          )
+else()
+  set(BASE_WIN_SOURCES "")
+  set(BASE_WIN_UNITTEST "")
+endif()
+
 add_library(base
     src/base/base.h
     src/base/bind_object.h
     src/base/logging.cc
     src/base/logging.h
     src/base/multi_callback.h
+    src/base/types.h
     src/base/string_utils.cc
     src/base/string_utils.h
     ${BASE_WIN_SOURCES}
     )
 
+# Event.
 add_library(event
     src/event/event.cc
     src/event/event.h
@@ -112,6 +99,21 @@ add_library(event
 target_link_libraries(event
     base
     )
+
+# Parser.
+if(WIN32)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D USE_ETW_PARSER")
+  set(ETW_PARSER_SOURCES
+          src/parser/etw/etw_parser.cc
+          src/parser/etw/etw_parser.h
+          )
+  set(ETW_PARSER_UNITTEST
+          src/parser/etw/etw_parser_unittest.cc
+          )
+else()
+  set(ETW_PARSER_SOURCES "")
+  set(ETW_PARSER_UNITTEST "")
+endif()
 
 add_library(parser
     src/parser/decoder.cc
@@ -127,6 +129,13 @@ add_library(parser
 target_link_libraries(parser
     base
     event
+    )
+
+add_library(symbols
+    src/symbols/image.cc
+    src/symbols/image.h
+    src/symbols/symbols_resolver.cc
+    src/symbols/symbols_resolver.h
     )
 
 ####################
@@ -162,6 +171,7 @@ add_executable(unittests
     src/parser/parser_unittest.cc
     src/parser/etw/etw_raw_kernel_payload_decoder_unittest.cc
     src/parser/etw/etw_raw_payload_decoder_utils_unittest.cc
+    src/symbols/symbols_resolver_unittest.cc
     ${ETW_PARSER_UNITTEST}
     ${GMOCK_ROOT}/gtest/src/gtest-all.cc
     ${GMOCK_ROOT}/src/gmock-all.cc
@@ -172,6 +182,7 @@ target_link_libraries(unittests
     base
     event
     parser
+    symbols
     ${PTHREAD_LIB}
     )
 endif(GMOCK_FOUND)
