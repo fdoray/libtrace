@@ -131,12 +131,37 @@ target_link_libraries(parser
     event
     )
 
+# Symbols.
+if(WIN32)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D USE_DBGHELP")
+  set(SYMBOLS_WIN_SOURCES
+          src/symbols/win/dbghelp_wrapper.cc
+          src/symbols/win/dbghelp_wrapper.h
+          )
+else()
+  set(SYMBOLS_WIN_SOURCES "")
+endif()
+
 add_library(symbols
     src/symbols/image.cc
     src/symbols/image.h
+    src/symbols/symbol.h
     src/symbols/symbols_resolver.cc
     src/symbols/symbols_resolver.h
+    ${SYMBOLS_WIN_SOURCES}
     )
+
+if(WIN32)
+	target_link_libraries(parser
+	    dbghelp.lib
+	    )
+
+    add_custom_command(TARGET symbols PRE_BUILD
+    	COMMAND ${CMAKE_COMMAND} -E copy
+    	${CMAKE_SOURCE_DIR}/third_party/debugging_tools/x86/dbghelp.dll $<TARGET_FILE_DIR:symbols>
+    	COMMAND ${CMAKE_COMMAND} -E copy
+    	${CMAKE_SOURCE_DIR}/third_party/debugging_tools/x86/symsrv.dll $<TARGET_FILE_DIR:symbols>)
+endif()
 
 ####################
 # Apps

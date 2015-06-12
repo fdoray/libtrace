@@ -23,47 +23,42 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef SYMBOLS_IMAGE_H_
-#define SYMBOLS_IMAGE_H_
+#ifndef SYMBOLS_SYMBOL_H_
+#define SYMBOLS_SYMBOL_H_
 
-#include <stdint.h>
 #include <string>
+
+#include "base/types.h"
 
 namespace symbols {
 
-// Information about an image loaded in memory.
-struct Image {
-  Image();
-  bool operator==(const Image& other) const;
+class Symbol {
+ public:
+  Symbol() {}
 
-  // Image size.
-  uint32_t size;
+  // Name of the symbol.
+  const std::wstring& name() const { return name_; }
+  void set_name(const std::wstring& name) { name_ = name; }
 
-  // Image checksum.
-  uint32_t checksum;
+  // Offset of the symbol in the image.
+  const base::Offset& offset() const { return offset_; }
+  void set_offset(const base::Offset& offset) { offset_ = offset; }
 
-  // Image timestamp.
-  uint32_t timestamp;
+  // Size of the symbol.
+  size_t size() const { return size_; }
+  void set_size(size_t size) { size_ = size; }
 
-  // Full path of the image file, from the kernel point of view.
-  std::wstring filename;
+ private:
+  // Name of the symbol.
+  std::wstring name_;
+
+  // Offset of the symbol in the image.
+  base::Offset offset_;
+
+  // Size of the symbol.
+  size_t size_;
 };
 
 }  // namespace symbols
 
-namespace std {
-
-template <>
-class hash<symbols::Image> {
- public:
-  size_t operator()(const symbols::Image& image) const {
-    return std::hash<uint64_t>()(image.size) ^
-      std::hash<uint32_t>()(image.checksum) ^
-      std::hash<uint32_t>()(image.timestamp) ^
-      std::hash<std::wstring>()(image.filename);
-  }
-};
-
-}  // namespace std
-
-#endif  // SYMBOLS_IMAGE_H_
+#endif  // SYMBOLS_SYMBOL_H_

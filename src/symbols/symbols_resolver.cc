@@ -44,6 +44,14 @@ void SymbolsResolver::UnloadImage(base::Pid pid, base::Address base_address) {
   process_it->second.erase(base_address);
 }
 
+bool ResolveSymbol(base::Pid pid, base::Address address, Symbol* symbol) {
+#if defined(USE_DBGHELP)
+  return false;
+#else
+  return false;
+#endif
+}
+
 const Image* SymbolsResolver::FindImage(
     base::Pid pid, base::Address address,
     base::Address* image_base_address) const {

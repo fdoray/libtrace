@@ -33,6 +33,11 @@
 #include "base/types.h"
 #include "gtest/gtest_prod.h"
 #include "symbols/image.h"
+#include "symbols/symbol.h"
+
+#if defined(USE_DBGHELP)
+#include "symbols/win/dbghelp_wrapper.h"
+#endif
 
 namespace symbols {
 
@@ -55,11 +60,15 @@ class SymbolsResolver {
   void UnloadImage(base::Pid pid,
                    base::Address base_address);
 
+  bool ResolveSymbol(base::Pid pid,
+                     base::Address address,
+                     Symbol* symbol);
+
  private:
   // Finds to which image of a process an address belongs.
   // @param pid the pid of the process to which the address belongs.
   // @param address the address for which to find the image.
-  // @param image_base_address [out] the base address of the image, if found.
+  // @param image_base_address the base address of the image, if found.
   // @returns the image to which the address belongs, or nullptr if not found.
   const Image* FindImage(base::Pid pid,
                          base::Address address,
@@ -69,6 +78,12 @@ class SymbolsResolver {
   typedef std::map<base::Address, symbols::Image> Images;
   typedef std::unordered_map<base::Pid, Images> PidToImages;
   PidToImages pid_to_images_;
+
+#if defined(USE_DBGHELP)
+  // Wrapper for the Dbghelp API, which allows symbols to be retrieved from PDB
+  // files.
+  win::DbghelpWrapper dbghelp_wrapper_;
+#endif
 
   FRIEND_TEST(SymbolsResolver, FindImage);
 

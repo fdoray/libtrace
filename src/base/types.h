@@ -31,6 +31,7 @@
 namespace base
 {
 typedef uint64_t Address;
+typedef uint64_t Offset;
 typedef uint64_t Pid;
 }  // namespace base
 
