@@ -128,6 +128,55 @@ class Value {
   bool GetAsWString(std::wstring* value) const;
   // @}
 
+  // Check whether the dictionary has a value for the given field name.
+  // @param name the name to check existence.
+  // @returns true if the dictionary has a field named |name|.
+  virtual bool HasField(const std::string& name) const;
+
+  // Retrieve the value of a field with the given name.
+  // @param name the name of the field to find.
+  // @returns the value of the field if the field is found, nullptr otherwise.
+  virtual const Value* GetField(const std::string& name) const;
+
+  // Retrieve the value for a given name.
+  // @param name the name of the field to find.
+  // @param value receives the value of the field with name |name|.
+  // @returns true if the field is found, false otherwise.
+  virtual bool GetField(const std::string& name, const Value** value) const;
+
+  // Retrieve the value of a given type for a given name.
+  // @tparam T the type to cast the field value.
+  // @param name the name of the field to find.
+  // @param value receives the value of the field with name |name|.
+  // @returns true if the field is found and of the specified type, false
+  //     otherwise.
+  template<class T>
+  bool GetFieldAs(const std::string& name, const T** value) const {
+    DCHECK(value != nullptr);
+    const Value* field = nullptr;
+    if (!GetField(name, &field) || !T::InstanceOf(field))
+      return false;
+    *value = T::Cast(field);
+    return true;
+  }
+
+  // These methods allow the convenient retrieval of a field with a basic
+  // value. If the current value can be converted into the given type,
+  // the value is returned through the |value| parameter.
+  // @param name the name of the field to retrieve.
+  // @param value receives the value holded by the field.
+  // @returns true when the conversion is valid, false otherwise and |value|
+  // stay unchanged.
+  // @{
+  bool GetFieldAsInteger(const std::string& name, int32_t* value) const;
+  bool GetFieldAsUInteger(const std::string& name, uint32_t* value) const;
+  bool GetFieldAsLong(const std::string& name, int64_t* value) const;
+  bool GetFieldAsULong(const std::string& name, uint64_t* value) const;
+  bool GetFieldAsFloating(const std::string& name, double* value) const;
+  bool GetFieldAsString(const std::string& name, std::string* value) const;
+  bool GetFieldAsWString(const std::string& name, std::wstring* value) const;
+  // @}
+
   // Compare this value with the given value |value|.
   // @param value the value to compare with.
   // @returns true when both values are equal, false otherwise.
@@ -273,7 +322,7 @@ class ArrayValue : public AggregateValue<VALUE_ARRAY> {
   //     otherwise.
   template<class T>
   bool GetElementAs(size_t index, const T** value) const {
-    DCHECK(value != NULL);
+    DCHECK(value != nullptr);
     if (index >= values_.size())
       return false;
     const Value* field = at(index);
@@ -337,53 +386,11 @@ class StructValue : public AggregateValue<VALUE_STRUCT> {
   StructValue();
   virtual ~StructValue();
 
-  // Check whether the dictionary has a value for the given field name.
-  // @param name the name to check existence.
-  // @returns true if the dictionary has a field named |name|.
-  bool HasField(const std::string& name) const;
-
-  // Retrieve the value for a given name.
-  // @param name the name of the field to find.
-  // @returns the value of the field if the field is found, NULL otherwise.
-  const Value* GetField(const std::string& name) const;
-
-  // Retrieve the value for a given name.
-  // @param name the name of the field to find.
-  // @param value receives the value of the field with name |name|.
-  // @returns true if the field is found, false otherwise.
-  bool GetField(const std::string& name, const Value** value) const;
-
-  // Retrieve the value of a given type for a given name.
-  // @tparam T the type to cast the field value.
-  // @param name the name of the field to find.
-  // @param value receives the value of the field with name |name|.
-  // @returns true if the field is found and of the specified type, false
-  //     otherwise.
-  template<class T>
-  bool GetFieldAs(const std::string& name, const T** value) const {
-    DCHECK(value != NULL);
-    const Value* field = NULL;
-    if (!GetField(name, &field) || !T::InstanceOf(field))
-      return false;
-    *value = T::Cast(field);
-    return true;
-  }
-
-  // These methods allow the convenient retrieval of a field with a basic
-  // value. If the current value can be converted into the given type,
-  // the value is returned through the |value| parameter.
-  // @param name the name of the field to retrieve.
-  // @param value receives the value holded by the field.
-  // @returns true when the conversion is valid, false otherwise and |value|
-  // stay unchanged.
+  // Overridden from Value:
   // @{
-  bool GetFieldAsInteger(const std::string& name, int32_t* value) const;
-  bool GetFieldAsUInteger(const std::string& name, uint32_t* value) const;
-  bool GetFieldAsLong(const std::string& name, int64_t* value) const;
-  bool GetFieldAsULong(const std::string& name, uint64_t* value) const;
-  bool GetFieldAsFloating(const std::string& name, double* value) const;
-  bool GetFieldAsString(const std::string& name, std::string* value) const;
-  bool GetFieldAsWString(const std::string& name, std::wstring* value) const;
+  bool HasField(const std::string& name) const override;
+  const Value* GetField(const std::string& name) const override;
+  bool GetField(const std::string& name, const Value** value) const override;
   // @}
 
   // Add a field with name |name| to this structure.

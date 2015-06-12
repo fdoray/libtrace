@@ -33,7 +33,7 @@
 namespace event {
 
 bool Value::GetAsInteger(int32_t* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
 
   switch (GetType()) {
     case VALUE_BOOL: {
@@ -89,7 +89,7 @@ bool Value::GetAsInteger(int32_t* value) const {
 }
 
 bool Value::GetAsUInteger(uint32_t* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
 
   switch (GetType()) {
     case VALUE_BOOL: {
@@ -151,7 +151,7 @@ bool Value::GetAsUInteger(uint32_t* value) const {
 }
 
 bool Value::GetAsLong(int64_t* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
 
   switch (GetType()) {
     case VALUE_BOOL: {
@@ -199,7 +199,7 @@ bool Value::GetAsLong(int64_t* value) const {
 }
 
 bool Value::GetAsULong(uint64_t* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
 
   switch (GetType()) {
     case VALUE_BOOL: {
@@ -256,7 +256,7 @@ bool Value::GetAsULong(uint64_t* value) const {
 }
 
 bool Value::GetAsFloating(double* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
 
   switch (GetType()) {
     case VALUE_FLOAT: {
@@ -273,7 +273,7 @@ bool Value::GetAsFloating(double* value) const {
 }
 
 bool Value::GetAsString(std::string* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
 
   switch (GetType()) {
     case VALUE_STRING: {
@@ -290,7 +290,7 @@ bool Value::GetAsString(std::string* value) const {
 }
 
 bool Value::GetAsWString(std::wstring* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
 
   switch (GetType()) {
     case VALUE_STRING: {
@@ -304,6 +304,80 @@ bool Value::GetAsWString(std::wstring* value) const {
     default:
       return false;
   }
+}
+
+bool Value::HasField(const std::string& name) const {
+  return false;
+}
+
+const Value* Value::GetField(const std::string& name) const {
+  return nullptr;
+}
+
+bool Value::GetField(const std::string& name, const Value** value) const {
+  return false;
+}
+
+bool Value::GetFieldAsInteger(
+    const std::string& name, int32_t* value) const {
+  DCHECK(value != nullptr);
+  const Value* field = nullptr;
+  if (!GetField(name, &field))
+    return false;
+  return field->GetAsInteger(value);
+}
+
+bool Value::GetFieldAsUInteger(
+    const std::string& name, uint32_t* value) const {
+  DCHECK(value != nullptr);
+  const Value* field = nullptr;
+  if (!GetField(name, &field))
+    return false;
+  return field->GetAsUInteger(value);
+}
+
+bool Value::GetFieldAsLong(const std::string& name, int64_t* value) const {
+  DCHECK(value != nullptr);
+  const Value* field = nullptr;
+  if (!GetField(name, &field))
+    return false;
+  return field->GetAsLong(value);
+}
+
+bool Value::GetFieldAsULong(
+    const std::string& name, uint64_t* value) const {
+  DCHECK(value != nullptr);
+  const Value* field = nullptr;
+  if (!GetField(name, &field))
+    return false;
+  return field->GetAsULong(value);
+}
+
+bool Value::GetFieldAsFloating(
+    const std::string& name, double* value) const {
+  DCHECK(value != nullptr);
+  const Value* field = nullptr;
+  if (!GetField(name, &field))
+    return false;
+  return field->GetAsFloating(value);
+}
+
+bool Value::GetFieldAsString(
+    const std::string& name, std::string* value) const {
+  DCHECK(value != nullptr);
+  const Value* field = nullptr;
+  if (!GetField(name, &field))
+    return false;
+  return field->GetAsString(value);
+}
+
+bool Value::GetFieldAsWString(
+    const std::string& name, std::wstring* value) const {
+  DCHECK(value != nullptr);
+  const Value* field = nullptr;
+  if (!GetField(name, &field))
+    return false;
+  return field->GetAsWString(value);
 }
 
 template<class T, int TYPE>
@@ -342,7 +416,7 @@ bool ScalarValue<T, TYPE>::IsFloating() const {
 
 template<class T, int TYPE>
 bool ScalarValue<T, TYPE>::Equals(const Value* value) const {
-  if (value == NULL)
+  if (value == nullptr)
     return false;
 
   if (!ScalarValue<T, TYPE>::InstanceOf(value))
@@ -359,27 +433,27 @@ const T& ScalarValue<T, TYPE>::GetValue() const {
 
 template<class T, int TYPE>
 bool ScalarValue<T, TYPE>::InstanceOf(const Value* value) {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   return value->GetType() == TYPE;
 }
 
 template<class T, int TYPE>
 const ScalarValue<T, TYPE>* ScalarValue<T, TYPE>::Cast(const Value* value) {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   DCHECK(value->GetType() == TYPE);
   return reinterpret_cast<const SelfType*>(value);
 }
 
 template<class T, int TYPE>
 const T& ScalarValue<T, TYPE>::GetValue(const Value* value) {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   return Cast(value)->GetValue();
 }
 
 template<class T, int TYPE>
 bool ScalarValue<T, TYPE>::GetValue(const Value* value, T* dst) {
-  DCHECK(value != NULL);
-  DCHECK(dst != NULL);
+  DCHECK(value != nullptr);
+  DCHECK(dst != nullptr);
   if (!InstanceOf(value))
     return false;
   *dst = Cast(value)->GetValue();
@@ -443,7 +517,7 @@ size_t ArrayValue::Length() const {
 }
 
 void ArrayValue::Append(std::unique_ptr<Value> value) {
-  DCHECK(value.get() != NULL);
+  DCHECK(value.get() != nullptr);
   values_.push_back(value.release());
 }
 
@@ -464,56 +538,56 @@ Value* ArrayValue::at(size_t index) {
 }
 
 bool ArrayValue::GetElementAsInteger(size_t index, int32_t* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   if (index >= values_.size())
     return false;
   return at(index)->GetAsInteger(value);
 }
 
 bool ArrayValue::GetElementAsUInteger(size_t index, uint32_t* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   if (index >= values_.size())
     return false;
   return at(index)->GetAsUInteger(value);
 }
 
 bool ArrayValue::GetElementAsLong(size_t index, int64_t* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   if (index >= values_.size())
     return false;
   return at(index)->GetAsLong(value);
 }
 
 bool ArrayValue::GetElementAsULong(size_t index, uint64_t* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   if (index >= values_.size())
     return false;
   return at(index)->GetAsULong(value);
 }
 
 bool ArrayValue::GetElementAsFloating(size_t index, double* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   if (index >= values_.size())
     return false;
   return at(index)->GetAsFloating(value);
 }
 
 bool ArrayValue::GetElementAsString(size_t index, std::string* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   if (index >= values_.size())
     return false;
   return at(index)->GetAsString(value);
 }
 
 bool ArrayValue::GetElementAsWString(size_t index, std::wstring* value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   if (index >= values_.size())
     return false;
   return at(index)->GetAsWString(value);
 }
 
 bool ArrayValue::Equals(const Value* value) const {
-  if (value == NULL)
+  if (value == nullptr)
     return false;
 
   if (!ArrayValue::InstanceOf(value))
@@ -537,12 +611,12 @@ bool ArrayValue::Equals(const Value* value) const {
 }
 
 bool ArrayValue::InstanceOf(const Value* value) {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   return value->GetType() == VALUE_ARRAY;
 }
 
 const ArrayValue* ArrayValue::Cast(const Value* value) {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   DCHECK(value->GetType() == VALUE_ARRAY);
   return reinterpret_cast<const ArrayValue*>(value);
 }
@@ -562,13 +636,13 @@ bool StructValue::HasField(const std::string& name) const {
 const Value* StructValue::GetField(const std::string& name) const {
   ValueMap::const_iterator look = fields_map_.find(name);
   if (look == fields_map_.end())
-    return NULL;
+    return nullptr;
   return look->second;
 }
 
 bool StructValue::GetField(const std::string& name,
                            const Value** value) const {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   ValueMap::const_iterator look = fields_map_.find(name);
   if (look == fields_map_.end())
     return false;
@@ -576,70 +650,8 @@ bool StructValue::GetField(const std::string& name,
   return true;
 }
 
-bool StructValue::GetFieldAsInteger(
-    const std::string& name, int32_t* value) const {
-  DCHECK(value != NULL);
-  const Value* field = NULL;
-  if (!GetField(name, &field))
-    return false;
-  return field->GetAsInteger(value);
-}
-
-bool StructValue::GetFieldAsUInteger(
-    const std::string& name, uint32_t* value) const {
-  DCHECK(value != NULL);
-  const Value* field = NULL;
-  if (!GetField(name, &field))
-    return false;
-  return field->GetAsUInteger(value);
-}
-
-bool StructValue::GetFieldAsLong(const std::string& name, int64_t* value) const {
-  DCHECK(value != NULL);
-  const Value* field = NULL;
-  if (!GetField(name, &field))
-    return false;
-  return field->GetAsLong(value);
-}
-
-bool StructValue::GetFieldAsULong(
-    const std::string& name, uint64_t* value) const {
-  DCHECK(value != NULL);
-  const Value* field = NULL;
-  if (!GetField(name, &field))
-    return false;
-  return field->GetAsULong(value);
-}
-
-bool StructValue::GetFieldAsFloating(
-    const std::string& name, double* value) const {
-  DCHECK(value != NULL);
-  const Value* field = NULL;
-  if (!GetField(name, &field))
-    return false;
-  return field->GetAsFloating(value);
-}
-
-bool StructValue::GetFieldAsString(
-    const std::string& name, std::string* value) const {
-  DCHECK(value != NULL);
-  const Value* field = NULL;
-  if (!GetField(name, &field))
-    return false;
-  return field->GetAsString(value);
-}
-
-bool StructValue::GetFieldAsWString(
-    const std::string& name, std::wstring* value) const {
-  DCHECK(value != NULL);
-  const Value* field = NULL;
-  if (!GetField(name, &field))
-    return false;
-  return field->GetAsWString(value);
-}
-
 bool StructValue::AddField(const std::string& name, std::unique_ptr<Value> value) {
-  DCHECK(value.get() != NULL);
+  DCHECK(value.get() != nullptr);
   if (HasField(name))
     return false;
   Value* raw_value = value.release();
@@ -649,7 +661,7 @@ bool StructValue::AddField(const std::string& name, std::unique_ptr<Value> value
 }
 
 bool StructValue::Equals(const Value* value) const {
-  if (value == NULL)
+  if (value == nullptr)
     return false;
 
   if (!StructValue::InstanceOf(value))
@@ -676,12 +688,12 @@ bool StructValue::Equals(const Value* value) const {
 }
 
 bool StructValue::InstanceOf(const Value* value) {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   return value->GetType() == VALUE_STRUCT;
 }
 
 const StructValue* StructValue::Cast(const Value* value) {
-  DCHECK(value != NULL);
+  DCHECK(value != nullptr);
   DCHECK(value->GetType() == VALUE_STRUCT);
   return reinterpret_cast<const StructValue*>(value);
 }

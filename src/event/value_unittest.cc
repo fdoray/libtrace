@@ -44,6 +44,45 @@ class IncrementOnDelete : public IntValue {
 
 }  // namespace
 
+TEST(ValueTest, EmptyStructOperations) {
+  IntValue value(42);
+
+  ASSERT_FALSE(value.HasField("toto"));
+  ASSERT_EQ(nullptr, value.GetField("toto"));
+
+  const Value* out_value = nullptr;
+  ASSERT_FALSE(value.GetField("toto", &out_value));
+  ASSERT_EQ(nullptr, out_value);
+
+  int32_t out_int32 = 0;
+  ASSERT_FALSE(value.GetFieldAsInteger("toto", &out_int32));
+  ASSERT_EQ(0, out_int32);
+
+  uint32_t out_uint32 = 0;
+  ASSERT_FALSE(value.GetFieldAsUInteger("toto", &out_uint32));
+  ASSERT_EQ(0, out_uint32);
+
+  int64_t out_int64 = 0;
+  ASSERT_FALSE(value.GetFieldAsLong("toto", &out_int64));
+  ASSERT_EQ(0, out_int64);
+
+  uint64_t out_uint64 = 0;
+  ASSERT_FALSE(value.GetFieldAsULong("toto", &out_uint64));
+  ASSERT_EQ(0, out_uint64);
+
+  double out_double = 0.0;
+  ASSERT_FALSE(value.GetFieldAsFloating("toto", &out_double));
+  ASSERT_EQ(0.0, out_double);
+
+  std::string out_str;
+  ASSERT_FALSE(value.GetFieldAsString("toto", &out_str));
+  ASSERT_TRUE(out_str.empty());
+
+  std::wstring out_wstr;
+  ASSERT_FALSE(value.GetFieldAsWString("toto", &out_wstr));
+  ASSERT_TRUE(out_wstr.empty());
+}
+
 TEST(ScalarValueTest, Accessors) {
   BoolValue value_bool(true);
   EXPECT_EQ(true, value_bool.GetValue());
