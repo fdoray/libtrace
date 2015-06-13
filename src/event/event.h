@@ -38,20 +38,34 @@ class Value;
 
 typedef uint64_t Timestamp;
 
+// Header field names.
+extern const char kOperationFieldName[];
+extern const char kCategoryFieldName[];
+extern const char kProcessIdFieldName[];
+extern const char kThreadIdFieldName[];
+extern const char kProcessorNumberFieldName[];
+
 // This class contains a single event and its payload.
 class Event {
  public:
 
   // Constructor.
   // @param timestamp the timestamp at which this event occurred.
+  // @param header the header of this event.
   // @param payload the payload of this event.
-  Event(Timestamp timestamp, std::unique_ptr<const Value> payload);
+  Event(Timestamp timestamp,
+        std::unique_ptr<const Value> header,
+        std::unique_ptr<const Value> payload);
 
   // Accessors.
   // @{
 
   // Returns the timestamp of this event.
   Timestamp timestamp() const;
+
+  // Returns the header of this event. The event keeps ownership of the
+  // header.
+  const Value* header() const;
 
   // Returns the payload of this event. The event keeps ownership of the
   // payload.
@@ -60,6 +74,7 @@ class Event {
 
  private:
   Timestamp timestamp_;
+  const std::unique_ptr<const Value> header_;
   const std::unique_ptr<const Value> payload_;
 
   DISALLOW_COPY_AND_ASSIGN(Event);

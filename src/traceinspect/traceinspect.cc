@@ -23,29 +23,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <iostream>
 #include <memory>
 
+#include "base/bind_object.h"
 #include "base/logging.h"
 #include "event/utils.h"
 #include "parser/parser.h"
 #include "parser/etw/etw_parser.h"
-
-namespace {
-
-using event::Event;
-
-void ReceiveEvent(const Event& event) {
-  std::string output;
-  if (!event::ToString(event, &output)) {
-    LOG(INFO) << "Cannot serialize event.";
-    return;
-  }
-
-  std::cout << output << std::endl;
-}
-
-}  // namespace
+#include "state/current_state.h"
 
 int wmain(int argc, wchar_t* argv[], wchar_t* /*envp */ []) {
   parser::Parser parser;
@@ -60,7 +45,8 @@ int wmain(int argc, wchar_t* argv[], wchar_t* /*envp */ []) {
     }
   }
 
-  parser.Parse(&ReceiveEvent);
+  state::CurrentState current_state;
+  parser.Parse(base::BindObject(&state::CurrentState::OnEvent, &current_state));
 
   return 0;
 }

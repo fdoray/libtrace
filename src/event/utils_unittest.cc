@@ -93,14 +93,16 @@ TEST(EventToStringTest, StructType) {
 }
 
 TEST(EventToStringTest, Event) {
+  std::unique_ptr<StructValue> header(new StructValue());
+  header->AddField<IntValue>("field", 1337);
   std::unique_ptr<StructValue> payload(new StructValue());
   payload->AddField<IntValue>("field", 12);
-  Event event(42, std::move(payload));
+  Event event(42, std::move(header), std::move(payload));
 
   std::string event_str;
   EXPECT_TRUE(ToString(event, &event_str));
 
-  const char* expected = "[42] event {\n    field = 12\n}";
+  const char* expected = "[42] event {\n    field = 1337\n} {\n    field = 12\n}";
   EXPECT_STREQ(expected, event_str.c_str());
 }
 

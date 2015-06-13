@@ -131,6 +131,9 @@ bool ToString(const Event& event, std::string* result) {
 
   std::stringstream ss;
   ss << "[" << event.timestamp() << "] event ";
+  if (!ToString(event.header(), 0, &ss))
+    return false;
+  ss << " ";
   if (!ToString(event.payload(), 0, &ss))
     return false;
 

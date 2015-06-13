@@ -23,21 +23,36 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef STATE_CURRENT_STATE_H_
+#define STATE_CURRENT_STATE_H_
+
+#include "base/base.h"
 #include "event/event.h"
-#include "event/value.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include "symbols/symbols_resolver.h"
 
-namespace event {
+namespace state {
 
-TEST(EventTest, ConstructorAndAccessors) {
-  std::unique_ptr<const Value> header(new IntValue(1337));
-  std::unique_ptr<const Value> payload(new IntValue(42));
-  Event event(Timestamp(123456U), std::move(header), std::move(payload));
+// Keeps track of the state of the system while a trace is read.
+class CurrentState {
+ public:
+  CurrentState();
+  ~CurrentState();
 
-  EXPECT_EQ(123456U, event.timestamp());
-  EXPECT_EQ(1337, IntValue::Cast(event.header())->GetValue());
-  EXPECT_EQ(42, IntValue::Cast(event.payload())->GetValue());
-}
+  // Called when an event is read from the trace.
+  // @param event the read event.
+  void OnEvent(const event::Event& event);
 
-}  // namespace event
+ private:
+  // Called when different kinds of events are read.
+  void OnImageLoad(const event::Event& event);
+  void OnImageUnload(const event::Event& event);
+
+  // Symbols resolver.
+  symbols::SymbolsResolver symbols_;
+
+  DISALLOW_COPY_AND_ASSIGN(CurrentState);
+};
+
+}  // namespace state
+
+#endif  // STATE_CURRENT_STATE_H_

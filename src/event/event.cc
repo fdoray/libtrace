@@ -28,13 +28,26 @@
 
 namespace event {
 
-Event::Event(Timestamp timestamp, std::unique_ptr<const Value> payload)
+const char kOperationFieldName[] = "operation";
+const char kCategoryFieldName[] = "category";
+const char kProcessIdFieldName[] = "process_id";
+const char kThreadIdFieldName[] = "thread_id";
+const char kProcessorNumberFieldName[] = "processor_number";
+
+Event::Event(Timestamp timestamp,
+             std::unique_ptr<const Value> header,
+             std::unique_ptr<const Value> payload)
     : timestamp_(timestamp),
+      header_(std::move(header)),
       payload_(std::move(payload)) {
 }
 
 Timestamp Event::timestamp() const {
   return timestamp_;
+}
+
+const Value* Event::header() const {
+  return header_.get();
 }
 
 const Value* Event::payload() const {

@@ -98,7 +98,7 @@ ETWParser::ETWParser()
 
 bool ETWParser::AddTraceFile(const std::wstring& path) {
   if (!traces_.empty()) {
-    LOG(ERROR) << "ETW Parser can only read one trace at a time." << std::endl;
+    LOG(ERROR) << "ETW Parser can only read one trace at a time.";
     return false;
   }
   if (!base::WStringEndsWith(path, L".etl")) {
@@ -196,14 +196,13 @@ void WINAPI ETWParser::ProcessEvent(PEVENT_RECORD pevent) {
   }
 
   // Generate the event header fields.
-  std::unique_ptr<StructValue> fields(new StructValue());
-  fields->AddField<StringValue>("operation", operation);
-  fields->AddField<StringValue>("category", category);
-  fields->AddField<ULongValue>("process_id", pevent->EventHeader.ProcessId);
-  fields->AddField<ULongValue>("thread_id", pevent->EventHeader.ThreadId);
-  fields->AddField<UCharValue>("processor_number",
+  std::unique_ptr<StructValue> header(new StructValue());
+  header->AddField<StringValue>(event::kOperationFieldName, operation);
+  header->AddField<StringValue>(event::kCategoryFieldName, category);
+  header->AddField<ULongValue>(event::kProcessIdFieldName, pevent->EventHeader.ProcessId);
+  header->AddField<ULongValue>(event::kThreadIdFieldName, pevent->EventHeader.ThreadId);
+  header->AddField<UCharValue>(event::kProcessorNumberFieldName,
       pevent->BufferContext.ProcessorNumber);
-  fields->AddField("content", std::move(payload));
 
   // Compute the timestamp.
   uint64_t raw_ts = pevent->EventHeader.TimeStamp.QuadPart;
@@ -212,7 +211,7 @@ void WINAPI ETWParser::ProcessEvent(PEVENT_RECORD pevent) {
           event_parser->perf_period_);
 
   // Create the event with decoded fields.
-  Event event(Timestamp(system_ts), std::move(fields));
+  Event event(Timestamp(system_ts), std::move(header), std::move(payload));
 
   // Send the event to the callback.
   (*event_parser->event_callback_)(event);

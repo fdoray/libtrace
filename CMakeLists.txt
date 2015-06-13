@@ -131,6 +131,12 @@ target_link_libraries(parser
     event
     )
 
+# State.
+add_library(state
+    src/state/current_state.cc
+    src/state/current_state.h
+    )
+
 # Symbols.
 if(WIN32)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D USE_DBGHELP")
@@ -168,6 +174,8 @@ endif()
 ####################
 
 if(WIN32)
+
+# tracedump.
 add_executable(tracedump
     src/tracedump/tracedump.cc
     )
@@ -177,6 +185,20 @@ target_link_libraries(tracedump
     event
     parser
     )
+
+# traceinspect.
+add_executable(traceinspect
+    src/traceinspect/traceinspect.cc
+    )
+
+target_link_libraries(traceinspect
+    base
+    event
+    parser
+    state
+    symbols
+    )
+
 endif()
 
 ####################

@@ -26,6 +26,8 @@
 #ifndef BASE_BIND_OBJECT_H_
 #define BASE_BIND_OBJECT_H_
 
+#include <functional>
+
 namespace base {
 
 // Inspired from
