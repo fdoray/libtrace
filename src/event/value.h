@@ -356,8 +356,8 @@ class ArrayValue : public AggregateValue<VALUE_ARRAY> {
 
   // Iteration.
   // @{
-  const_iterator values_begin() const { return values_.begin(); }
-  const_iterator values_end() const { return values_.end(); }
+  const_iterator begin() const { return values_.begin(); }
+  const_iterator end() const { return values_.end(); }
   // @}
 
   // Determine if |value| is of type ArrayType.

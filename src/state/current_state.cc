@@ -25,6 +25,8 @@
 
 #include "state/current_state.h"
 
+#include <vector>
+
 #include "event/value.h"
 
 namespace state {
@@ -36,6 +38,11 @@ const char kImageCategory[] = "Image";
 const char kImageLoadOperation[] = "Load";
 const char kImageDCStartOperation[] = "DCStart";
 const char kImageUnloadOperation[] = "Unload";
+const char kImageKernelBase[] = "KernelBase";
+
+// Stackwalk events.
+const char kStackWalkCategory[] = "StackWalk";
+const char kStackOperation[] = "Stack";
 
 }  // namespace
 
@@ -62,6 +69,11 @@ void CurrentState::OnEvent(const event::Event& event) {
     } else if (operation == kImageUnloadOperation) {
       OnImageUnload(event);
     }
+    else if (operation == kImageKernelBase) {
+      // TODO.
+    }
+  } else if (category == kStackWalkCategory && operation == kStackOperation) {
+    OnStackWalk(event);
   }
 }
 
@@ -94,6 +106,35 @@ void CurrentState::OnImageUnload(const event::Event& event) {
   }
 
   symbols_.UnloadImage(pid, base_address);
+}
+
+void CurrentState::OnStackWalk(const event::Event& event) {
+  base::Timestamp event_ts = 0;
+  base::Pid pid = 0;
+  base::Tid tid = 0;
+  const event::ArrayValue* stack = nullptr;
+
+  if (!event.payload()->GetFieldAsULong("EventTimeStamp", &event_ts) ||
+      !event.payload()->GetFieldAsULong("StackProcess", &pid) ||
+      !event.payload()->GetFieldAsULong("StackThread", &tid) ||
+      !event.payload()->GetFieldAs<event::ArrayValue>("Stack", &stack)) {
+    LOG(WARNING) << "Incomplete StackWalk event.";
+    return;
+  }
+
+  // Symbolize the stack.
+  std::vector<std::wstring> symbolized_stack;
+  for (const event::Value* address_value : *stack) {
+    base::Address address = 0;
+    if (!address_value->GetAsULong(&address)) {
+      LOG(WARNING) << "Invalid stack format in StackWalk event.";
+      return;
+    }
+
+    symbols::Symbol symbol;
+    if (symbols_.ResolveSymbol(pid, address, &symbol))
+      symbolized_stack.push_back(symbol.name());
+  }
 }
 
 }  // namespace state

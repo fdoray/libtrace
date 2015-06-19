@@ -28,6 +28,7 @@
 
 #include <map>
 #include <unordered_map>
+#include <vector>
 
 #include "base/base.h"
 #include "base/types.h"
@@ -65,6 +66,8 @@ class SymbolsResolver {
                      Symbol* symbol);
 
  private:
+  typedef std::vector<Symbol> ImageSymbols;
+
   // Finds to which image of a process an address belongs.
   // @param pid the pid of the process to which the address belongs.
   // @param address the address for which to find the image.
@@ -73,6 +76,13 @@ class SymbolsResolver {
   const Image* FindImage(base::Pid pid,
                          base::Address address,
                          base::Address* image_base_address) const;
+
+#if defined(USE_DBGHELP)
+  // Returns the symbols of an image. The symbols are always added to the cache
+  // when this method is called.
+  // @param image image for which to cache the symbols.
+  const ImageSymbols& GetImageSymbols(const Image& image);
+#endif
 
   // Images loaded in each process.
   typedef std::map<base::Address, symbols::Image> Images;
@@ -83,6 +93,10 @@ class SymbolsResolver {
   // Wrapper for the Dbghelp API, which allows symbols to be retrieved from PDB
   // files.
   win::DbghelpWrapper dbghelp_wrapper_;
+
+  // Cache of image symbols.
+  typedef std::unordered_map<Image, ImageSymbols> SymbolCache;
+  SymbolCache symbol_cache_;
 #endif
 
   FRIEND_TEST(SymbolsResolver, FindImage);

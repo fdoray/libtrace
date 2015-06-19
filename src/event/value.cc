@@ -597,9 +597,9 @@ bool ArrayValue::Equals(const Value* value) const {
   if (array->Length() != Length())
     return false;
 
-  const_iterator left = values_begin();
-  const_iterator right = array->values_begin();
-  while (left != values_end() || right != array->values_end()) {
+  const_iterator left = begin();
+  const_iterator right = array->begin();
+  while (left != end() || right != array->end()) {
     if (!(*left)->Equals(*right))
       return false;
 

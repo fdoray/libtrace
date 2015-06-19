@@ -25,7 +25,20 @@
 
 #include "symbols/symbols_resolver.h"
 
+#include <algorithm>
+
+#include "base/inserter.h"
+
 namespace symbols {
+
+namespace {
+
+bool SymbolOffsetComparison(
+  const base::Offset& offset, const Symbol& symbol) {
+  return offset < symbol.offset(); 
+}
+
+}  // namespace
 
 SymbolsResolver::SymbolsResolver() {
 }
@@ -44,9 +57,37 @@ void SymbolsResolver::UnloadImage(base::Pid pid, base::Address base_address) {
   process_it->second.erase(base_address);
 }
 
-bool ResolveSymbol(base::Pid pid, base::Address address, Symbol* symbol) {
+bool SymbolsResolver::ResolveSymbol(
+    base::Pid pid, base::Address address, Symbol* symbol) {
 #if defined(USE_DBGHELP)
-  return false;
+  // Find the image to which the symbol belongs.
+  base::Address image_base_address = 0;
+  const Image* image = FindImage(pid, address, &image_base_address);
+  if (image == nullptr)
+    return false;
+
+  // Get the symbols for this image.
+  const ImageSymbols& image_symbols = GetImageSymbols(*image);
+
+  // Resolve the symbol.
+  base::Offset offset = address - image_base_address;
+  auto it = std::upper_bound(
+      image_symbols.begin(), image_symbols.end(), offset,
+      &SymbolOffsetComparison);
+  if (it == image_symbols.begin())
+    return false;
+
+  --it;
+
+  if (it == image_symbols.end())
+    return false;
+
+  if (offset > it->offset() + it->size())
+    return false;
+
+  *symbol = *it;
+
+  return true;
 #else
   return false;
 #endif
@@ -79,5 +120,22 @@ const Image* SymbolsResolver::FindImage(
   *image_base_address = image_it->first;
   return &image_it->second;
 }
+
+#if defined(USE_DBGHELP)
+const SymbolsResolver::ImageSymbols& SymbolsResolver::GetImageSymbols(
+    const Image& image) {
+  auto look = symbol_cache_.find(image);
+  if (look != symbol_cache_.end())
+    return look->second;
+
+  ImageSymbols& image_symbols = symbol_cache_[image];
+  dbghelp_wrapper_.EnumerateSymbols(
+      image, base::BackInserter<Symbol>(&image_symbols));
+
+  std::sort(image_symbols.begin(), image_symbols.end());
+
+  return image_symbols;
+}
+#endif
 
 }  // namespace symbols

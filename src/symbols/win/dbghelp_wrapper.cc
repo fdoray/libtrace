@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "base/logging.h"
+#include "base/win/error_string.h"
 #include "base/win/scoped_handle.h"
 #include "symbols/win/dbghelp_wrapper.h"
 
@@ -33,6 +34,9 @@ namespace symbols {
 namespace win {
 
 namespace {
+
+// Address at which images are loaded.
+const base::Address kDefaultBaseAddress = 1024;
 
 // DbgHelp callback, used to provide the checksum and timestamp of an image
 // that is being loaded. See documentation of PSYMBOL_REGISTERED_CALLBACK64.
@@ -126,7 +130,7 @@ BOOL CALLBACK EnumerateSymbolsCallbackWrapper(PSYMBOL_INFO symbol_info,
       reinterpret_cast<const DbghelpWrapper::SymbolCallback*>(user_context);
 
   Symbol symbol;
-  symbol.set_offset(symbol_info->Address);
+  symbol.set_offset(symbol_info->Address - kDefaultBaseAddress);
   symbol.set_size(symbol_size);
 
   if (symbol_info->MaxNameLen != 0)
@@ -152,6 +156,9 @@ DbghelpWrapper::~DbghelpWrapper() {
 bool DbghelpWrapper::EnumerateSymbols(
     const Image& image, const SymbolCallback& callback) {
   DCHECK(!image.filename.empty());
+
+  if (!Initialize())
+    return false;
 
   std::wstring resolved_path;
   if (!ResolveKernelPath(image.filename, &resolved_path)) {
@@ -193,18 +200,33 @@ bool DbghelpWrapper::EnumerateSymbols(
   // Load the image and its symbols. This can take a long time if data must
   // be downloaded from a symbol server.
   DWORD64 dwRet = ::SymLoadModuleEx(dbghelp_handle_, image_file.get(), NULL, NULL,
-                                    0, image.size, NULL, 0);
+                                    kDefaultBaseAddress, image.size, NULL, 0);
 
   // SymLoadModuleEx() returns 0 in case of error, when a module is loaded at
   // address 0 or when the module is already loaded.
-  if (dwRet == 0 && ::GetLastError() != ERROR_SUCCESS)
-    return false;
+  if (dwRet == 0) {
+    DWORD error = ::GetLastError();
+    if (error != ERROR_SUCCESS) {
+      LOG(ERROR) << "Error while loading symbols. "
+                 << base::GetWindowsErrorString(error);
+      return false;
+    }
+  }
 
   // Enumerate the symbols for the image. |callback| is called synchronously for
   // each symbol of the image.
   BOOL res = ::SymEnumSymbols(
-      dbghelp_handle_, 0, NULL, &EnumerateSymbolsCallbackWrapper,
+      dbghelp_handle_, kDefaultBaseAddress, NULL,
+      &EnumerateSymbolsCallbackWrapper,
       const_cast<PVOID>(reinterpret_cast<const void*>(&callback)));
+  if (res == FALSE) {
+    DWORD error = ::GetLastError();
+    if (error != ERROR_SUCCESS) {
+      LOG(ERROR) << "Error while loading symbols. "
+                 << base::GetWindowsErrorString(error);
+      return false;
+    }
+  }
 
   // Unload the image information from DbgHelp.
   ::SymUnloadModule64(dbghelp_handle_, 0);

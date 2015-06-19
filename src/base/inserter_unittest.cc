@@ -23,37 +23,22 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef BASE_MULTI_CALLBACK_H_
-#define BASE_MULTI_CALLBACK_H_
+#include "base/inserter.h"
 
-#include <functional>
-#include <initializer_list>
 #include <vector>
+
+#include "gtest/gtest.h"
 
 namespace base {
 
-/*
-template<typename R, typename... Args>
-std::function<R(Args...)> MultiCallback(std::function<R(Args...)> callback) {
-  return [=](Args... args) {
-    callback(args...);
-  };
-}
-*/
+TEST(Inserter, BackInserter) {
+  std::vector<int> vec;
+  auto inserter = BackInserter<int>(&vec);
+  inserter(1);
+  inserter(2);
+  inserter(3);
 
-template<typename T>
-std::vector<T> CallbackVector(std::initializer_list<T> callbacks) {
-  return std::vector<T>(callbacks.begin(), callbacks.end());
-}
-
-template<typename R, typename... Args>
-std::function<R(Args...)> MultiCallback(std::vector<std::function<R(Args...)>> callbacks) {
-  return [=](Args... args) {
-    for (const auto& callback : callbacks)
-      callback(args...);
-  };
+  EXPECT_EQ(std::vector<int>({1, 2, 3}), vec);
 }
 
 }  // namespace base
-
-#endif  // BASE_MULTI_CALLBACK_H_

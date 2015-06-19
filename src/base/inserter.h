@@ -23,56 +23,20 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <functional>
+#ifndef BASE_INSERTER_H_
+#define BASE_INSERTER_H_
 
-#include "base/multi_callback.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <functional>
 
 namespace base {
 
-namespace {
-
-class MockObject {
- public:
-  MOCK_METHOD1(Method1, void(int));
-  MOCK_METHOD1(Method2, void(int));
-  MOCK_METHOD2(Method3, void(int, int));
-  MOCK_METHOD2(Method4, void(int, int));
-};
-
-}  // namespace
-
-TEST(MultiCallback, OneParameter) {
-  MockObject mock_object;
-
-  EXPECT_CALL(mock_object, Method1(8));
-  EXPECT_CALL(mock_object, Method2(8));
-
-  auto multi_callback = base::MultiCallback(
-      base::CallbackVector<std::function<void(int)>>({
-          std::bind(&MockObject::Method1, &mock_object, std::placeholders::_1),
-          std::bind(&MockObject::Method2, &mock_object, std::placeholders::_1)
-      }));
-
-  multi_callback(8);
-}
-
-TEST(MultiCallback, TwoParameters) {
-  MockObject mock_object;
-
-  EXPECT_CALL(mock_object, Method3(8, 42));
-  EXPECT_CALL(mock_object, Method4(8, 42));
-
-  auto multi_callback = base::MultiCallback(
-      base::CallbackVector<std::function<void(int, int)>>({
-          std::bind(&MockObject::Method3, &mock_object, std::placeholders::_1,
-              std::placeholders::_2),
-          std::bind(&MockObject::Method4, &mock_object, std::placeholders::_1,
-              std::placeholders::_2)
-      }));
-
-  multi_callback(8, 42);
+template<typename T, typename C>
+std::function<void(const T&)> BackInserter(C* collection) {
+  return [=](const T& element) {
+    collection->push_back(element);
+  };
 }
 
 }  // namespace base
+
+#endif  // BASE_INSERTER_H_

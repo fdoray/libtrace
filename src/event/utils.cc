@@ -93,8 +93,8 @@ bool ToString(const Value* value, size_t indent, std::stringstream* result) {
       DCHECK(array_value != NULL);
 
       *result << "[\n";
-      ArrayValue::const_iterator it = array_value->values_begin();
-      for (; it != array_value->values_end(); ++it) {
+      ArrayValue::const_iterator it = array_value->begin();
+      for (; it != array_value->end(); ++it) {
         *result << indent_field;
         if (!ToString(*it, indent + 4, result))
           return false;

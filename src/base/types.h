@@ -30,9 +30,12 @@
 
 namespace base
 {
+typedef uint64_t Timestamp;
 typedef uint64_t Address;
 typedef uint64_t Offset;
 typedef uint64_t Pid;
+typedef uint64_t Tid;
+
 }  // namespace base
 
 #endif  // BASE_TYPES_H_

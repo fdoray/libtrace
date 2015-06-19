@@ -46,6 +46,7 @@ class CurrentState {
   // Called when different kinds of events are read.
   void OnImageLoad(const event::Event& event);
   void OnImageUnload(const event::Event& event);
+  void OnStackWalk(const event::Event& event);
 
   // Symbols resolver.
   symbols::SymbolsResolver symbols_;

@@ -48,6 +48,19 @@ class Symbol {
   size_t size() const { return size_; }
   void set_size(size_t size) { size_ = size; }
 
+  // Comparison operator.
+  bool operator<(const Symbol& other) const {
+    if (offset_ < other.offset_)
+      return true;
+    if (offset_ > other.offset_)
+      return false;
+    if (size_ < other.size_)
+      return true;
+    if (size_ > other.size_)
+      return false;
+    return name_ < other.name_;
+  }
+
  private:
   // Name of the symbol.
   std::wstring name_;

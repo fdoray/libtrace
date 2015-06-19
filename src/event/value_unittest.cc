@@ -725,14 +725,14 @@ TEST(ArrayValueTest, Iterate) {
   value.Append(std::move(v2));
   value.Append(std::move(v3));
 
-  ArrayValue::const_iterator it = value.values_begin();
+  ArrayValue::const_iterator it = value.begin();
   EXPECT_EQ(v1_raw, *it);
   ++it;
   EXPECT_EQ(v2_raw, *it);
   ++it;
   EXPECT_EQ(v3_raw, *it);
   ++it;
-  EXPECT_TRUE(it == value.values_end());
+  EXPECT_TRUE(it == value.end());
 }
 
 TEST(ArrayValueTest, Instanceof) {
